@@ -1,0 +1,67 @@
+# Build and output directories
+/build/
+managed_components/
+*.elf
+*.bin
+*.map
+*.hex
+*.out
+*.a
+*.o
+*.obj
+*.d
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.tmp
+*.swp
+*.swo
+*.bak
+*.orig
+*.rej
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# ESP-IDF
+sdkconfig.old
+sdkconfig.ci
+sdkconfig
+project_description.json
+flasher_args.json
+partition-table-flash_args
+bootloader-flash_args
+app-flash_args
+flash_args
+flash_app_args
+flash_bootloader_args
+flash_project_args
+kconfigs_projbuild.in
+kconfigs.in
+ldgen_libraries
+ldgen_libraries.in
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python virtualenv
+.venv/
+venv/
+__pycache__/
+
+# Arduino
+*.ino.*
+
+# Misc
+*.user
+*.sublime-workspace
+*.sublime-project
