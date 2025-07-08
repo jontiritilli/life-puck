@@ -16,4 +16,5 @@ dependencies:
   #   public: true
   lvgl/lvgl: ^9.3.0
   espressif/esp_lcd_st77916: ^1.0.1
-  espp/wifi: ^1.0.11
+  espressif/esp_lcd_touch: ^1.1.2
+  espressif/esp-sr: ^2.1.4

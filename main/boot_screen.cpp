@@ -5,8 +5,11 @@
 // Internal state
 static lv_obj_t* arc = nullptr;
 static lv_obj_t* label = nullptr;
+
 static uint32_t anim_start = 0;
 static bool active = false;
+// Boot screen duration in milliseconds (easy to adjust)
+static const uint32_t BOOT_SCREEN_DURATION_MS = 5000;
 
 static void arc_anim_cb(void* obj, int32_t v) {
     lv_arc_set_end_angle((lv_obj_t*)obj, v);
@@ -17,8 +20,10 @@ static void label_fade_cb(void* obj, int32_t opa) {
 }
 
 void boot_screen_show() {
+    active = true;  
+    // Clear the screen before showing the boot screen
+    lv_obj_clean(lv_scr_act());
     printf("[BOOT] boot_screen_show() called\n");
-    active = true;
     anim_start = esp_timer_get_time() / 1000;
 
     // Create red arc (tracer)
@@ -58,21 +63,21 @@ void boot_screen_show() {
     lv_anim_start(&b);
 }
 
+
 bool boot_screen_active() {
-    // Boot screen is active for 2 seconds total
-    return active && ((esp_timer_get_time() / 1000) - anim_start < 2000);
+    // Boot screen is active for BOOT_SCREEN_DURATION_MS
+    return active && ((esp_timer_get_time() / 1000) - anim_start < BOOT_SCREEN_DURATION_MS);
 }
 
 void boot_screen_update() {
-    if (active && ((esp_timer_get_time() / 1000) - anim_start > 2000)) {
-        printf("[BOOT] boot_screen_update() cleaning up boot screen\n");
+    if (active && ((esp_timer_get_time() / 1000) - anim_start > BOOT_SCREEN_DURATION_MS)) {
         // Clean up boot screen objects
         if (arc) lv_obj_del(arc);
         if (label) lv_obj_del(label);
         arc = nullptr;
         label = nullptr;
+        // Clear the screen after boot screen is done
+        lv_obj_clean(lv_scr_act());
         active = false;
-    } else if (active) {
-        printf("[BOOT] boot_screen_update() still active, elapsed: %lu ms\n", (unsigned long)((esp_timer_get_time() / 1000) - anim_start));
     }
 }

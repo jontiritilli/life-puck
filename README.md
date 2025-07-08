@@ -1,53 +1,81 @@
-| Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C5 | ESP32-C6 | ESP32-C61 | ESP32-H2 | ESP32-P4 | ESP32-S2 | ESP32-S3 | Linux |
-| ----------------- | ----- | -------- | -------- | -------- | -------- | --------- | -------- | -------- | -------- | -------- | ----- |
+| Supported Targets | ESP32 | ESP32-S3 |
+| ----------------- | ----- | -------- |
 
-# Hello World Example
+# Life Puck Project
 
-Starts a FreeRTOS task to print "Hello World".
+Life Puck is a custom ESP32-S3-based project featuring a touchscreen LCD, battery management, sensors, and a modern UI built with LVGL. This project is designed for embedded development using the ESP-IDF framework.
 
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
+## Features
 
-## How to use example
+- ESP32-S3 microcontroller
+- 1.85" Touch LCD display
+- LVGL graphics library
+- Battery monitoring and power management
+- I2C, SD card, RTC, and sensor drivers
+- Modular C++ codebase
 
-Follow detailed instructions provided specifically for this example.
-
-Select the instructions depending on Espressif chip installed on your development board:
-
-- [ESP32 Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/stable/get-started/index.html)
-- [ESP32-S2 Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/get-started/index.html)
-
-
-## Example folder contents
-
-The project **hello_world** contains one source file in C language [hello_world_main.c](main/hello_world_main.c). The file is located in folder [main](main).
-
-ESP-IDF projects are built using CMake. The project build configuration is contained in `CMakeLists.txt` files that provide set of directives and instructions describing the project's source files and targets (executable, library, or both).
-
-Below is short explanation of remaining files in the project folder.
+## Project Structure
 
 ```
 ├── CMakeLists.txt
-├── pytest_hello_world.py      Python script used for automated testing
-├── main
-│   ├── CMakeLists.txt
-│   └── hello_world_main.c
-└── README.md                  This is the file you are currently reading
+├── sdkconfig
+├── main/
+│   ├── arc_animation.cpp/.h
+│   ├── boot_screen.cpp/.h
+│   ├── gestures.cpp/.h
+│   ├── life_counter.cpp/.h
+│   ├── LifePuck.cpp
+│   ├── lv_conf.h
+│   ├── lvgl_config.cpp
+│   ├── menu.cpp/.h
+│   ├── BAT_Driver/
+│   ├── EXIO/
+│   ├── I2C_Driver/
+│   ├── LCD_Driver/
+│   ├── LVGL_Driver/
+│   ├── PCF85063/
+│   ├── PWR_Key/
+│   ├── QMI8658/
+│   ├── SD_Card/
+│   └── Touch_Driver/
+├── managed_components/
+│   └── ...
+└── README.md
 ```
 
-For more information on structure and contents of ESP-IDF projects, please refer to Section [Build System](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/build-system.html) of the ESP-IDF Programming Guide.
+## Getting Started
+
+1. **Install ESP-IDF**: Follow the [ESP-IDF Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/get-started/index.html) for your platform.
+2. **Set up submodules/components**: Ensure all dependencies in `managed_components/` are present.
+3. **Configure the project**:
+   ```sh
+   idf.py menuconfig
+   ```
+4. **Build the project**:
+   ```sh
+   idf.py build
+   ```
+5. **Flash to device**:
+   ```sh
+   idf.py -p <PORT> flash
+   ```
+6. **Monitor output**:
+   ```sh
+   idf.py -p <PORT> monitor
+   ```
 
 ## Troubleshooting
 
-* Program upload failure
+- **Program upload failure**
+  - Check hardware connections and USB cable.
+  - Lower the baud rate in `menuconfig` if flashing fails.
+  - Use `idf.py -p <PORT> monitor` and reboot to check logs.
 
-    * Hardware connection is not correct: run `idf.py -p PORT monitor`, and reboot your board to see if there are any output logs.
-    * The baud rate for downloading is too high: lower your baud rate in the `menuconfig` menu, and try again.
+## Technical Support and Feedback
 
-## Technical support and feedback
+- For technical queries, visit the [esp32.com](https://esp32.com/) forum
+- For feature requests or bug reports, create a [GitHub issue](https://github.com/espressif/esp-idf/issues)
 
-Please use the following feedback channels:
+---
 
-* For technical queries, go to the [esp32.com](https://esp32.com/) forum
-* For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-idf/issues)
-
-We will get back to you as soon as possible.
+This project is not affiliated with Espressif. For ESP-IDF documentation, see the [official guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/).

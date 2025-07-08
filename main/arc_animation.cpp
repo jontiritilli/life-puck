@@ -28,16 +28,19 @@ void arc_animation_init(int min_value, int max_value, int start_value, lv_obj_t*
     arc_value = start_value;
     arc_parent = parent ? parent : lv_scr_act();
 
-    if (!arc) {
-        arc = lv_arc_create(arc_parent);
-        lv_obj_set_size(arc, 340, 340);
-        lv_obj_center(arc);
-        lv_arc_set_bg_angles(arc, 0, 360);
-        lv_obj_set_style_arc_width(arc, arc_thickness, 0); // Thicker arc
-        lv_obj_set_style_arc_color(arc, arc_color, 0); // Default color
-        lv_obj_clear_flag(arc, LV_OBJ_FLAG_CLICKABLE); // Arc is not interactive
-        lv_obj_set_style_bg_opa(arc, LV_OPA_TRANSP, 0);
+    // Always delete previous arc to avoid overlap
+    if (arc) {
+        lv_obj_del(arc);
+        arc = nullptr;
     }
+    arc = lv_arc_create(arc_parent);
+    lv_obj_set_size(arc, 320, 320); // Fit typical round display
+    lv_obj_center(arc);
+    lv_arc_set_bg_angles(arc, 0, 360);
+    lv_obj_set_style_arc_width(arc, arc_thickness, 0); // Thicker arc
+    lv_obj_set_style_arc_color(arc, lv_color_hex(0xFF0000), 0); // Set arc to red for debug
+    lv_obj_clear_flag(arc, LV_OBJ_FLAG_CLICKABLE); // Arc is not interactive
+    lv_obj_set_style_bg_opa(arc, LV_OPA_TRANSP, 0);
     arc_animation_set(start_value);
 }
 
