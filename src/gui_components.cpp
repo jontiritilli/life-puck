@@ -215,7 +215,7 @@ static lv_color_t interpolate_color(lv_color_t c1, lv_color_t c2, uint8_t t)
   uint8_t r = (uint8_t)(r1 + ((int)r2 - (int)r1) * t / 255);
   uint8_t g = (uint8_t)(g1 + ((int)g2 - (int)g1) * t / 255);
   uint8_t b = (uint8_t)(b1 + ((int)b2 - (int)b1) * t / 255);
-  return lv_color_make(b, g, r);
+  return lv_color_make(r, g, b);
 }
 
 // Function to convert life total to arc segment
@@ -297,7 +297,7 @@ static arc_segment_t life_to_arc(int life_total)
 // Update the life label and arc based on the current life total
 void update_life_label(int value)
 {
-  static int last_life_total = -9999;
+  static int last_life_total = 0;
   life_total = value;
   if (life_label)
   {
@@ -358,7 +358,7 @@ void show_life_counter()
     lv_obj_add_flag(life_label, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(life_label, "0");                                // Always set text immediately
     lv_obj_set_style_text_font(life_label, &lv_font_montserrat_48, 0); // Large font
-    lv_obj_set_style_text_color(life_label, lv_color_black(), 0);
+    lv_obj_set_style_text_color(life_label, lv_color_white(), 0);
     lv_obj_align(life_label, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_text_opa(life_label, LV_OPA_TRANSP, 0); // Start transparent
   }
@@ -389,7 +389,7 @@ void show_life_counter()
   }
   // Fade in the life label at the same time as the arc sweep
   lv_obj_clear_flag(life_label, LV_OBJ_FLAG_HIDDEN);
-  fade_in_obj(life_label, 2000, 0, NULL);
+  fade_in_obj(life_label, 1000, 0, NULL);
 
   // // Add a transparent full-screen object to catch taps (only create once)
   // if (!tap_layer)
@@ -409,11 +409,13 @@ void ui_init(void)
 {
   // Create screen and all objects before loading
   active_screen = lv_obj_create(NULL);
-
+  lv_obj_set_style_bg_color(active_screen, lv_color_black(), LV_PART_MAIN);
+  lv_obj_set_style_bg_opa(active_screen, LV_OPA_COVER, LV_PART_MAIN);
   // Create "Life Puck" label (title)
   lv_obj_t *title_label = lv_label_create(active_screen);
   lv_label_set_text(title_label, "Life Puck");
   lv_obj_set_style_text_font(title_label, &lv_font_montserrat_36, 0);
+  lv_obj_set_style_text_color(title_label, lv_color_white(), 0);
   lv_obj_set_style_text_opa(title_label, LV_OPA_TRANSP, 0);
   lv_obj_align(title_label, LV_ALIGN_CENTER, 0, SCREEN_HEIGHT / 9);
   lv_obj_add_flag(title_label, LV_OBJ_FLAG_HIDDEN);
@@ -424,11 +426,11 @@ void ui_init(void)
 
   // Start fade-in for title label, then fade out and show life counter via show_life_counter()
   lv_obj_clear_flag(title_label, LV_OBJ_FLAG_HIDDEN);
-  fade_in_obj(title_label, 2500, 500, [](lv_anim_t *a)
+  fade_in_obj(title_label, 1000, 500, [](lv_anim_t *a)
               {
     // Fade out title label, then show life counter
     if (a && a->var) {
-      fade_out_obj((lv_obj_t *)a->var, 1500, 0, [](lv_anim_t *anim) {
+      fade_out_obj((lv_obj_t *)a->var, 1000, 0, [](lv_anim_t *anim) {
         if (anim && anim->var) {
           lv_obj_add_flag((lv_obj_t *)anim->var, LV_OBJ_FLAG_HIDDEN);
         }

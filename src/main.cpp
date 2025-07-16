@@ -26,7 +26,7 @@ esp_panel::board::Board *board = new esp_panel::board::Board();
 BaseType_t create_task(TaskFunction_t task_function, const char *task_name, uint32_t stack_size, void *param, UBaseType_t priority, TaskHandle_t *task_handle = NULL);
 
 /* LVGL draw into this buffer, 1/10 screen size usually works well. The size is in bytes */
-#define BUFFER_SIZE (SCREEN_HEIGHT * SCREEN_WIDTH * sizeof(uint16_t) / 8)
+#define BUFFER_SIZE (SCREEN_HEIGHT * SCREEN_WIDTH * sizeof(uint16_t) / 10)
 
 /* Forward declaration for flush_cb */
 void flush_cb(lv_display_t *display, const lv_area_t *area, uint8_t *px_map);
@@ -110,8 +110,15 @@ void gui_task(void *pvParameters)
 
 void flush_cb(lv_display_t *display, const lv_area_t *area, uint8_t *px_map)
 {
-  int width = area->x2 - area->x1 + 1;
-  int height = area->y2 - area->y1 + 1;
-  board->getLCD()->drawBitmap(area->x1, area->y1, width, height, px_map);
+  lv_draw_sw_rgb565_swap(
+      px_map, (area->x2 - area->x1 + 1) * (area->y2 - area->y1 + 1));
+
+  const int offsetx1 = area->x1;
+  const int offsetx2 = area->x2;
+  const int offsety1 = area->y1;
+  const int offsety2 = area->y2;
+  int width = offsetx2 - offsetx1 + 1;
+  int height = offsety2 - offsety1 + 1;
+  board->getLCD()->drawBitmap(offsetx1, offsety1, width, height, px_map);
   lv_display_flush_ready(display);
 }
