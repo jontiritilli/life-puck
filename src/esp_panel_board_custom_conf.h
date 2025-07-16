@@ -14,7 +14,6 @@
  */
 
 #pragma once
-#include "esp_io_expander.hpp"
 
 /**
  * @brief Flag to enable custom board configuration (0/1)
@@ -30,7 +29,7 @@
 /**
  * @brief Board name (format: "Manufacturer:Model")
  */
-#define ESP_PANEL_BOARD_NAME "Custom:Custom"
+#define ESP_PANEL_BOARD_NAME "esp32-s3-devkitc-1"
 
 /**
  * @brief Panel resolution configuration in pixels
@@ -97,29 +96,7 @@
  * https://docs.espressif.com/projects/esp-idf/en/v5.3.1/esp32s3/api-reference/peripherals/lcd/index.html
  * https://docs.espressif.com/projects/esp-iot-solution/en/latest/display/lcd/index.html
  */
-#if ESP_PANEL_BOARD_LCD_BUS_TYPE == ESP_PANEL_BUS_TYPE_SPI
-
-/**
- * @brief SPI bus
- */
-/* For general */
-#define ESP_PANEL_BOARD_LCD_SPI_HOST_ID (1) // Typically set to 1
-#if !ESP_PANEL_BOARD_LCD_BUS_SKIP_INIT_HOST
-/* For host */
-#define ESP_PANEL_BOARD_LCD_SPI_IO_SCK (7)
-#define ESP_PANEL_BOARD_LCD_SPI_IO_MOSI (6)
-#define ESP_PANEL_BOARD_LCD_SPI_IO_MISO (-1) // -1 if not used
-#endif                                       // ESP_PANEL_BOARD_LCD_BUS_SKIP_INIT_HOST
-/* For panel */
-#define ESP_PANEL_BOARD_LCD_SPI_IO_CS (5) // -1 if not used
-#define ESP_PANEL_BOARD_LCD_SPI_IO_DC (4)
-#define ESP_PANEL_BOARD_LCD_SPI_MODE (0) // 0-3. Typically set to 0
-#define ESP_PANEL_BOARD_LCD_SPI_CLK_HZ (40 * 1000 * 1000)
-// Should be an integer divisor of 80M, typically set to 40M
-#define ESP_PANEL_BOARD_LCD_SPI_CMD_BITS (8)   // Typically set to 8
-#define ESP_PANEL_BOARD_LCD_SPI_PARAM_BITS (8) // Typically set to 8
-
-#elif ESP_PANEL_BOARD_LCD_BUS_TYPE == ESP_PANEL_BUS_TYPE_QSPI
+#if ESP_PANEL_BOARD_LCD_BUS_TYPE == ESP_PANEL_BUS_TYPE_QSPI
 
 /**
  * @brief QSPI bus
@@ -133,7 +110,7 @@
 #define ESP_PANEL_BOARD_LCD_QSPI_IO_DATA1 (45)
 #define ESP_PANEL_BOARD_LCD_QSPI_IO_DATA2 (42)
 #define ESP_PANEL_BOARD_LCD_QSPI_IO_DATA3 (41)
-#endif                                      // ESP_PANEL_BOARD_LCD_BUS_SKIP_INIT_HOST
+#endif // ESP_PANEL_BOARD_LCD_BUS_SKIP_INIT_HOST
 /* For panel */
 #define ESP_PANEL_BOARD_LCD_QSPI_IO_CS (21) // -1 if not used
 #define ESP_PANEL_BOARD_LCD_QSPI_MODE (0)   // 0-3, typically set to 0
@@ -141,110 +118,6 @@
 // Should be an integer divisor of 80M, typically set to 40M
 #define ESP_PANEL_BOARD_LCD_QSPI_CMD_BITS (32)  // Typically set to 32
 #define ESP_PANEL_BOARD_LCD_QSPI_PARAM_BITS (8) // Typically set to 8
-
-#elif ESP_PANEL_BOARD_LCD_BUS_TYPE == ESP_PANEL_BUS_TYPE_RGB
-
-/**
- * @brief RGB bus
- */
-/**
- * Set to 0 if using simple "RGB" interface which does not contain "3-wire SPI" interface.
- */
-#define ESP_PANEL_BOARD_LCD_RGB_USE_CONTROL_PANEL (1) // 0/1. Typically set to 1
-
-#if ESP_PANEL_BOARD_LCD_RGB_USE_CONTROL_PANEL
-/* For control panel (3wire-SPI) */
-#define ESP_PANEL_BOARD_LCD_RGB_SPI_IO_CS (0)
-#define ESP_PANEL_BOARD_LCD_RGB_SPI_IO_SCK (1)
-#define ESP_PANEL_BOARD_LCD_RGB_SPI_IO_SDA (2)
-#define ESP_PANEL_BOARD_LCD_RGB_SPI_CS_USE_EXPNADER (0)  // Set to 1 if the signal is controlled by an IO expander
-#define ESP_PANEL_BOARD_LCD_RGB_SPI_SCL_USE_EXPNADER (0) // Set to 1 if the signal is controlled by an IO expander
-#define ESP_PANEL_BOARD_LCD_RGB_SPI_SDA_USE_EXPNADER (0) // Set to 1 if the signal is controlled by an IO expander
-#define ESP_PANEL_BOARD_LCD_RGB_SPI_MODE (0)             // 0-3, typically set to 0
-#define ESP_PANEL_BOARD_LCD_RGB_SPI_CMD_BYTES (1)        // Typically set to 1
-#define ESP_PANEL_BOARD_LCD_RGB_SPI_PARAM_BYTES (1)      // Typically set to 1
-#define ESP_PANEL_BOARD_LCD_RGB_SPI_USE_DC_BIT (1)       // 0/1. Typically set to 1
-#endif                                                   // ESP_PANEL_BOARD_LCD_RGB_USE_CONTROL_PANEL
-/* For refresh panel (RGB) */
-#define ESP_PANEL_BOARD_LCD_RGB_CLK_HZ (16 * 1000 * 1000)
-// To increase the upper limit of the PCLK, see: https://docs.espressif.com/projects/esp-faq/en/latest/software-framework/peripherals/lcd.html#how-can-i-increase-the-upper-limit-of-pclk-settings-on-esp32-s3-while-ensuring-normal-rgb-screen-display
-#define ESP_PANEL_BOARD_LCD_RGB_HPW (10)
-#define ESP_PANEL_BOARD_LCD_RGB_HBP (10)
-#define ESP_PANEL_BOARD_LCD_RGB_HFP (20)
-#define ESP_PANEL_BOARD_LCD_RGB_VPW (10)
-#define ESP_PANEL_BOARD_LCD_RGB_VBP (10)
-#define ESP_PANEL_BOARD_LCD_RGB_VFP (10)
-#define ESP_PANEL_BOARD_LCD_RGB_PCLK_ACTIVE_NEG (0)                          // 0: rising edge, 1: falling edge. Typically set to 0
-                                                                             // The following sheet shows the valid combinations of
-                                                                             // data width and pixel bits:
-                                                                             // ┏---------------------------------┳- -------------------------------┓
-#define ESP_PANEL_BOARD_LCD_RGB_DATA_WIDTH (16)                              // |                16               |               8                 |
-#define ESP_PANEL_BOARD_LCD_RGB_PIXEL_BITS (ESP_PANEL_LCD_COLOR_BITS_RGB565) // | ESP_PANEL_LCD_COLOR_BITS_RGB565 | ESP_PANEL_LCD_COLOR_BITS_RGB888 |
-                                                                             // ┗---------------------------------┻---------------------------------┛
-// To understand color format of RGB LCD, see: https://docs.espressif.com/projects/esp-iot-solution/en/latest/display/lcd/rgb_lcd.html#color-formats
-#define ESP_PANEL_BOARD_LCD_RGB_BOUNCE_BUF_SIZE (ESP_PANEL_BOARD_WIDTH * 10)
-// Bounce buffer size in bytes. It is used to avoid screen drift
-// for ESP32-S3. Typically set to `ESP_PANEL_BOARD_WIDTH * 10`
-// The size should satisfy `size * N = LCD_width * LCD_height`,
-// where N is an even number.
-// For more details, see: https://github.com/esp-arduino-libs/ESP32_Display_Panel/blob/master/docs/FAQ.md#how-to-fix-screen-drift-issue-when-driving-rgb-lcd-with-esp32-s3
-#define ESP_PANEL_BOARD_LCD_RGB_IO_HSYNC (46)
-#define ESP_PANEL_BOARD_LCD_RGB_IO_VSYNC (3)
-#define ESP_PANEL_BOARD_LCD_RGB_IO_DE (17) // -1 if not used
-#define ESP_PANEL_BOARD_LCD_RGB_IO_PCLK (9)
-#define ESP_PANEL_BOARD_LCD_RGB_IO_DISP (-1)   // -1 if not used. Typically set to -1
-
-// The following sheet shows the mapping of ESP GPIOs to
-// LCD data pins with different data width and color format:
-// ┏------┳- ------------┳--------------------------┓
-// | ESP: | 8-bit RGB888 |      16-bit RGB565       |
-// |------|--------------|--------------------------|
-// | LCD: |    RGB888    | RGB565 | RGB666 | RGB888 |
-// ┗------|--------------|--------|--------|--------|
-#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA0 (10)  //        |      D0      |   B0   |  B0-1  |   B0-3 |
-#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA1 (11)  //        |      D1      |   B1   |  B2    |   B4   |
-#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA2 (12)  //        |      D2      |   B2   |  B3    |   B5   |
-#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA3 (13)  //        |      D3      |   B3   |  B4    |   B6   |
-#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA4 (14)  //        |      D4      |   B4   |  B5    |   B7   |
-#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA5 (21)  //        |      D5      |   G0   |  G0    |   G0-2 |
-#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA6 (47)  //        |      D6      |   G1   |  G1    |   G3   |
-#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA7 (48)  //        |      D7      |   G2   |  G2    |   G4   |
-#if ESP_PANEL_BOARD_LCD_RGB_DATA_WIDTH > 8     //        ┗--------------┫--------|--------|--------|
-#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA8 (45)  //                       |   G3   |  G3    |   G5   |
-#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA9 (38)  //                       |   G4   |  G4    |   G6   |
-#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA10 (39) //                       |   G5   |  G5    |   G7   |
-#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA11 (40) //                       |   R0   |  R0-1  |   R0-3 |
-#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA12 (41) //                       |   R1   |  R2    |   R4   |
-#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA13 (42) //                       |   R2   |  R3    |   R5   |
-#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA14 (2)  //                       |   R3   |  R4    |   R6   |
-#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA15 (1)  //                       |   R4   |  R5    |   R7   |
-                                               //                       ┗--------┻--------┻--------┛
-#endif                                         // ESP_PANEL_BOARD_LCD_RGB_DATA_WIDTH
-
-#elif ESP_PANEL_BOARD_LCD_BUS_TYPE == ESP_PANEL_BUS_TYPE_MIPI_DSI
-
-/**
- * @brief MIPI DSI bus
- */
-/* For host */
-#define ESP_PANEL_BOARD_LCD_MIPI_DSI_LANE_NUM (2)          // ESP32-P4 supports 1 or 2 lanes
-#define ESP_PANEL_BOARD_LCD_MIPI_DSI_LANE_RATE_MBPS (1000) // Single lane bit rate, should check the LCD drive IC
-                                                           // datasheet for the supported lane rate. Different
-                                                           // color format (RGB565/RGB888) may have different
-                                                           // lane bit rate requirements.
-                                                           // ESP32-P4 supports max 1500Mbps
-/* For refresh panel (DPI) */
-#define ESP_PANEL_BOARD_LCD_MIPI_DPI_CLK_MHZ (52)
-#define ESP_PANEL_BOARD_LCD_MIPI_DPI_PIXEL_BITS (ESP_PANEL_LCD_COLOR_BITS_RGB565)
-// ESP_PANEL_LCD_COLOR_BITS_RGB565/RGB666/RGB888
-#define ESP_PANEL_BOARD_LCD_MIPI_DPI_HPW (10)
-#define ESP_PANEL_BOARD_LCD_MIPI_DPI_HBP (160)
-#define ESP_PANEL_BOARD_LCD_MIPI_DPI_HFP (160)
-#define ESP_PANEL_BOARD_LCD_MIPI_DPI_VPW (1)
-#define ESP_PANEL_BOARD_LCD_MIPI_DPI_VBP (23)
-#define ESP_PANEL_BOARD_LCD_MIPI_DPI_VFP (12)
-/* For DSI power PHY */
-#define ESP_PANEL_BOARD_LCD_MIPI_PHY_LDO_ID (3) // -1 if not used.
 
 #else
 
@@ -308,8 +181,8 @@
  */
 #define ESP_PANEL_BOARD_LCD_COLOR_BITS (ESP_PANEL_LCD_COLOR_BITS_RGB565)
 // ESP_PANEL_LCD_COLOR_BITS_RGB565/RGB666/RGB888
-#define ESP_PANEL_BOARD_LCD_COLOR_BGR_ORDER (1)  // 0: RGB, 1: BGR
-#define ESP_PANEL_BOARD_LCD_COLOR_INEVRT_BIT (0) // 0/1
+#define ESP_PANEL_BOARD_LCD_COLOR_BGR_ORDER (0)  // 0: RGB, 1: BGR
+#define ESP_PANEL_BOARD_LCD_COLOR_INVERT_BIT (1) // 0/1
 
 /**
  * @brief LCD transformation configuration
@@ -662,13 +535,19 @@
  * @param[in] p Pointer to the board object
  * @return true on success, false on failure
  */
-/*
-#define ESP_PANEL_BOARD_LCD_PRE_BEGIN_FUNCTION(p) \
-    {  \
-        auto board = static_cast<Board *>(p);  \
-        return true;    \
-    }
-*/
+#define ESP_PANEL_BOARD_LCD_PRE_BEGIN_FUNCTION(p)       \
+  {                                                     \
+    constexpr int LCD_RST = 1;                          \
+    auto board = static_cast<Board *>(p);               \
+    auto expander = board->getIO_Expander()->getBase(); \
+    /* LCD reset */                                     \
+    expander->pinMode(LCD_RST, OUTPUT);                 \
+    expander->digitalWrite(LCD_RST, LOW);               \
+    vTaskDelay(pdMS_TO_TICKS(10));                      \
+    expander->digitalWrite(LCD_RST, HIGH);              \
+    vTaskDelay(pdMS_TO_TICKS(100));                     \
+    return true;                                        \
+  }
 
 /**
  * @brief Post-begin function for LCD initialization

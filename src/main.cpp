@@ -7,74 +7,111 @@
 #include <Arduino.h>
 #include <esp_display_panel.hpp>
 #include <lvgl.h>
-#include "lvgl_v8_port.h"
+#include "gui_components.h"
+#include "power_key/power_key.h"
 
 using namespace esp_panel::drivers;
 using namespace esp_panel::board;
+
+// Limit tasks to run on the ESP32’s application CPU (CPU1)
+#if CONFIG_FREERTOS_UNICORE
+static const BaseType_t app_cpu = 0;
+#else
+static const BaseType_t app_cpu = 1;
+#endif
+
+esp_panel::board::Board *board = new esp_panel::board::Board();
+
+// Function to create a FreeRTOS task
+BaseType_t create_task(TaskFunction_t task_function, const char *task_name, uint32_t stack_size, void *param, UBaseType_t priority, TaskHandle_t *task_handle = NULL);
+
+/* LVGL draw into this buffer, 1/10 screen size usually works well. The size is in bytes */
+#define BUFFER_SIZE (SCREEN_HEIGHT * SCREEN_WIDTH * sizeof(uint16_t) / 8)
+
+/* Forward declaration for flush_cb */
+void flush_cb(lv_display_t *display, const lv_area_t *area, uint8_t *px_map);
+
+/* Forward declaration for gui_task */
+void gui_task(void *pvParameters);
 
 void setup()
 {
   Serial.begin(115200);
 
   Serial.println("Initializing board");
-  Board *board = new Board();
+  power_init();
   board->init();
-#if LVGL_PORT_AVOID_TEARING_MODE
-  auto lcd = board->getLCD();
-  // When avoid tearing function is enabled, the frame buffer number should be set in the board driver
-  lcd->configFrameBufferNumber(LVGL_PORT_DISP_BUFFER_NUM);
-#if ESP_PANEL_DRIVERS_BUS_ENABLE_RGB && CONFIG_IDF_TARGET_ESP32S3
-  auto lcd_bus = lcd->getBus();
-  /**
-   * As the anti-tearing feature typically consumes more PSRAM bandwidth, for the ESP32-S3, we need to utilize the
-   * "bounce buffer" functionality to enhance the RGB data bandwidth.
-   * This feature will consume `bounce_buffer_size * bytes_per_pixel * 2` of SRAM memory.
-   */
-  if (lcd_bus->getBasicAttributes().type == ESP_PANEL_BUS_TYPE_RGB)
-  {
-    static_cast<BusRGB *>(lcd_bus)->configRGB_BounceBufferSize(lcd->getFrameWidth() * 10);
-  }
-#endif
-#endif
   assert(board->begin());
-
-  Serial.println("Initializing LVGL");
-  lvgl_port_init(board->getLCD(), board->getTouch());
-  // Allocate a buffer for 1 line (360 pixels, RGB565 = 2 bytes per pixel)
-  static lv_color_t buf1[360 * 10];
-  static lv_color_t buf2[360 * 10];
-  static lv_disp_draw_buf_t draw_buf;
-  lv_disp_draw_buf_init(&draw_buf, buf1, buf2, 360 * 10);
-
-  Serial.println("Creating UI");
-  /* Lock the mutex due to the LVGL APIs are not thread-safe */
-  lvgl_port_lock(-1);
-
-  /**
-   * Create the simple labels
-   */
-  lv_obj_t *label_1 = lv_label_create(lv_scr_act());
-  lv_label_set_text(label_1, "Hello World!");
-  lv_obj_set_style_text_font(label_1, &lv_font_montserrat_36, 0);
-  lv_obj_align(label_1, LV_ALIGN_CENTER, 0, -20);
-  lv_obj_t *label_2 = lv_label_create(lv_scr_act());
-  lv_label_set_text_fmt(
-      label_2, "ESP32_Display_Panel(%d.%d.%d)",
-      ESP_PANEL_VERSION_MAJOR, ESP_PANEL_VERSION_MINOR, ESP_PANEL_VERSION_PATCH);
-  lv_obj_set_style_text_font(label_2, &lv_font_montserrat_16, 0);
-  lv_obj_align_to(label_2, label_1, LV_ALIGN_OUT_BOTTOM_MID, 0, 10);
-  lv_obj_t *label_3 = lv_label_create(lv_scr_act());
-  lv_label_set_text_fmt(label_3, "LVGL(%d.%d.%d)", LVGL_VERSION_MAJOR, LVGL_VERSION_MINOR, LVGL_VERSION_PATCH);
-  lv_obj_set_style_text_font(label_3, &lv_font_montserrat_24, 0);
-  lv_obj_set_style_bg_color(label_3, lv_color_hex(0xFF0000), 0); // Use red for clear color test
-  lv_obj_align_to(label_3, label_2, LV_ALIGN_OUT_BOTTOM_MID, 0, 10);
-
-  /* Release the mutex */
-  lvgl_port_unlock();
+  create_task(gui_task, "gui_task", 4096, NULL, 1, NULL);
 }
 
 void loop()
 {
-  Serial.println("IDLE loop");
-  delay(1000);
+  vTaskDelay(1000 / portTICK_PERIOD_MS);
+  power_loop();
+}
+
+BaseType_t create_task(TaskFunction_t task_function, const char *task_name, uint32_t stack_size, void *param, UBaseType_t priority, TaskHandle_t *task_handle)
+{
+  return xTaskCreatePinnedToCore(
+      task_function, // Function to be called
+      task_name,     // Name of task
+      stack_size,    // Stack size (bytes in ESP32)
+      param,         // Parameter to pass to function
+      priority,      // Task priority (0 to configMAX_PRIORITIES - 1)
+      task_handle,   // Task handle
+      app_cpu        // Run on core 1 (change to 0 for core 0)
+  );
+}
+
+void gui_task(void *pvParameters)
+{
+  Serial.println("Initializing LVGL");
+  lv_init();
+
+  lv_tick_set_cb(xTaskGetTickCount);
+
+  // Step 1: Create display object (LVGL 9.3)
+  lv_display_t *display = lv_display_create(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+  // Step 2: Allocate display buffers
+  uint32_t *buf1 = (uint32_t *)malloc(BUFFER_SIZE / 2 * sizeof(uint32_t));
+  uint32_t *buf2 = (uint32_t *)malloc(BUFFER_SIZE / 2 * sizeof(uint32_t));
+  if (!buf1 || !buf2)
+  {
+    Serial.println("[LVGL] ERROR: Display buffer allocation failed!");
+    while (1)
+    {
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+  }
+
+  // Step 3: Set display buffers and flush callback
+  lv_display_set_buffers(display, buf1, buf2, BUFFER_SIZE, LV_DISPLAY_RENDER_MODE_PARTIAL);
+  lv_display_set_flush_cb(display, flush_cb);
+
+  Serial.println("Creating UI");
+
+  ui_init();
+
+  // Step 4: Main GUI loop (LVGL 9.3)
+  while (1)
+  {
+    uint32_t time_till_next = 5;
+
+    // Timer handler needs to be called periodically to handle the tasks of LVGL
+    time_till_next = lv_timer_handler(); // lv_task_handler() is aparently lvgl v8 only
+    // ui_tick();
+
+    if (time_till_next != LV_NO_TIMER_READY)           // Handle LV_NO_TIMER_READY (-1)
+      vTaskDelay(time_till_next / portTICK_PERIOD_MS); // Delay to avoid unnecessary polling
+  }
+}
+
+void flush_cb(lv_display_t *display, const lv_area_t *area, uint8_t *px_map)
+{
+  int width = area->x2 - area->x1 + 1;
+  int height = area->y2 - area->y1 + 1;
+  board->getLCD()->drawBitmap(area->x1, area->y1, width, height, px_map);
+  lv_display_flush_ready(display);
 }
