@@ -4,13 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 /**
- * @file   esp_panel_board_custom_conf.h
- * @brief  Configuration file for custom ESP development boards
- * @author
- * @link
- *
- * This file contains all the configurations needed for a custom board using ESP Panel.
- * Users can modify these configurations according to their hardware design.
+ * @file   BOARD_ESP32_S3_TOUCH_LCD_1_85.h
+ * @brief  Configuration file for Waveshare ESP32_S3_TOUCH_LCD_1_85
+ * @author @martinroger & Waveshare@H-sw123
+ * @link   https://www.waveshare.com/esp32-s3-touch-lcd-1.85.htm
  */
 
 #pragma once
@@ -24,12 +21,12 @@
 
 #if ESP_PANEL_BOARD_DEFAULT_USE_CUSTOM
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////// Please update the following macros to configure general parameters ///////////////////////////
+//////////////////////////// Please update the following macros to configure general panel /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- * @brief Board name (format: "Manufacturer:Model")
+ * @brief Board name
  */
-#define ESP_PANEL_BOARD_NAME "esp32-s3-devkitc-1"
+#define ESP_PANEL_BOARD_NAME "Waveshare:ESP32_S3_TOUCH_LCD_1_85"
 
 /**
  * @brief Panel resolution configuration in pixels
@@ -50,29 +47,11 @@
 #if ESP_PANEL_BOARD_USE_LCD
 /**
  * @brief LCD controller selection
- *
- * Supported controllers:
- * - `AXS15231B`
- * - `EK9716B`, `EK79007`
- * - `GC9A01`, `GC9B71`, `GC9503`
- * - `HX8399`
- * - `ILI9341`, `ILI9881C`
- * - `JD9165`, `JD9365`
- * - `NV3022B`
- * - `SH8601`
- * - `SPD2010`
- * - `ST7262`, `ST7701`, `ST7703`, `ST7789`, `ST7796`, `ST77903`, `ST77916`, `ST77922`
  */
 #define ESP_PANEL_BOARD_LCD_CONTROLLER ST77916
 
 /**
  * @brief LCD bus type selection
- *
- * Supported bus types:
- * - `ESP_PANEL_BUS_TYPE_SPI`
- * - `ESP_PANEL_BUS_TYPE_QSPI`
- * - `ESP_PANEL_BUS_TYPE_RGB` (ESP32-S3 only)
- * - `ESP_PANEL_BUS_TYPE_MIPI_DSI` (ESP32-P4 only)
  */
 #define ESP_PANEL_BOARD_LCD_BUS_TYPE (ESP_PANEL_BUS_TYPE_QSPI)
 
@@ -119,62 +98,7 @@
 #define ESP_PANEL_BOARD_LCD_QSPI_CMD_BITS (32)  // Typically set to 32
 #define ESP_PANEL_BOARD_LCD_QSPI_PARAM_BITS (8) // Typically set to 8
 
-#else
-
-#error "The function is not ready and will be implemented in the future."
-
 #endif // ESP_PANEL_BOARD_LCD_BUS_TYPE
-
-/**
- * @brief LCD specific flags configuration
- *
- * These flags are specific to the "3-wire SPI + RGB" bus.
- */
-#if (ESP_PANEL_BOARD_LCD_BUS_TYPE == ESP_PANEL_BUS_TYPE_RGB) && ESP_PANEL_BOARD_LCD_RGB_USE_CONTROL_PANEL
-/**
- * @brief Enable IO multiplex
- *
- * Set to 1 if the 3-wire SPI pins are sharing other pins of the RGB interface to save GPIOs. Then, the control panel
- * and its pins (except CS signal) will be released after LCD call `init()`. All `*_by_cmd` flags will be invalid.
- */
-#define ESP_PANEL_BOARD_LCD_FLAGS_ENABLE_IO_MULTIPLEX (0) // typically set to 0
-/**
- * @brief Mirror by command
- *
- * Set to 1 if the `mirror()` function will be implemented by LCD command. Otherwise, the function will be implemented by
- * software. Only valid when `ESP_PANEL_BOARD_LCD_FLAGS_ENABLE_IO_MULTIPLEX` is 0.
- */
-#define ESP_PANEL_BOARD_LCD_FLAGS_MIRROR_BY_CMD (!ESP_PANEL_BOARD_LCD_FLAGS_ENABLE_IO_MULTIPLEX)
-#endif // ESP_PANEL_BOARD_LCD_RGB_USE_CONTROL_PANEL
-
-/**
- * @brief LCD vendor initialization commands
- *
- * Vendor specific initialization can be different between manufacturers, should consult the LCD supplier for
- * initialization sequence code. Please uncomment and change the following macro definitions. Otherwise, the LCD driver
- * will use the default initialization sequence code.
- *
- * The initialization sequence can be specified in two formats:
- * 1. Raw format:
- *    {command, (uint8_t []){data0, data1, ...}, data_size, delay_ms}
- * 2. Helper macros:
- *    - ESP_PANEL_LCD_CMD_WITH_8BIT_PARAM(delay_ms, command, {data0, data1, ...})
- *    - ESP_PANEL_LCD_CMD_WITH_NONE_PARAM(delay_ms, command)
- */
-/*
-#define ESP_PANEL_BOARD_LCD_VENDOR_INIT_CMD()                       \
-    {                                                               \
-        {0xFF, (uint8_t []){0x77, 0x01, 0x00, 0x00, 0x10}, 5, 0},   \
-        {0xC0, (uint8_t []){0x3B, 0x00}, 2, 0},                     \
-        {0xC1, (uint8_t []){0x0D, 0x02}, 2, 0},                     \
-        {0x29, (uint8_t []){0x00}, 0, 120},                         \
-        or
-        ESP_PANEL_LCD_CMD_WITH_8BIT_PARAM(0, 0xFF, {0x77, 0x01, 0x00, 0x00, 0x10}), \
-        ESP_PANEL_LCD_CMD_WITH_8BIT_PARAM(0, 0xC0, {0x3B, 0x00}),                   \
-        ESP_PANEL_LCD_CMD_WITH_8BIT_PARAM(0, 0xC1, {0x0D, 0x02}),                   \
-        ESP_PANEL_LCD_CMD_WITH_NONE_PARAM(120, 0x29),                               \
-    }
-*/
 
 /**
  * @brief LCD color configuration
@@ -209,33 +133,16 @@
  *
  * Set to `1` to enable touch panel support, `0` to disable
  */
-#define ESP_PANEL_BOARD_USE_TOUCH (0)
+#define ESP_PANEL_BOARD_USE_TOUCH (1)
 
 #if ESP_PANEL_BOARD_USE_TOUCH
 /**
  * @brief Touch controller selection
- *
- * Supported controllers:
- * - `AXS15231B`
- * - `CHSC6540`
- * - `CST816S`
- * - `CST820`
- * - `FT5x06`
- * - `GT911`, `GT1151`
- * - `SPD2010`
- * - `ST1633`, `ST7123`
- * - `STMPE610`
- * - `TT21100`
- * - `XPT2046`
  */
 #define ESP_PANEL_BOARD_TOUCH_CONTROLLER CST816S
 
 /**
  * @brief Touch bus type selection
- *
- * Supported types:
- * - `ESP_PANEL_BUS_TYPE_I2C`
- * - `ESP_PANEL_BUS_TYPE_SPI`
  */
 #define ESP_PANEL_BOARD_TOUCH_BUS_TYPE (ESP_PANEL_BUS_TYPE_I2C)
 
@@ -260,43 +167,22 @@
  * @brief I2C bus
  */
 /* For general */
-#define ESP_PANEL_BOARD_TOUCH_I2C_HOST_ID (0) // Typically set to 0
+#define ESP_PANEL_BOARD_TOUCH_I2C_HOST_ID (1) // Typically set to 0
 #if !ESP_PANEL_BOARD_TOUCH_BUS_SKIP_INIT_HOST
 /* For host */
 #define ESP_PANEL_BOARD_TOUCH_I2C_CLK_HZ (400 * 1000)
 // Typically set to 400K
 #define ESP_PANEL_BOARD_TOUCH_I2C_SCL_PULLUP (1) // 0/1. Typically set to 1
 #define ESP_PANEL_BOARD_TOUCH_I2C_SDA_PULLUP (1) // 0/1. Typically set to 1
-#define ESP_PANEL_BOARD_TOUCH_I2C_IO_SCL (10)
-#define ESP_PANEL_BOARD_TOUCH_I2C_IO_SDA (11)
+#define ESP_PANEL_BOARD_TOUCH_I2C_IO_SCL (3)
+#define ESP_PANEL_BOARD_TOUCH_I2C_IO_SDA (1)
 #endif
 /* For panel */
-#define ESP_PANEL_BOARD_TOUCH_I2C_ADDRESS (0) // Use default address for CST816S
+#define ESP_PANEL_BOARD_TOUCH_I2C_ADDRESS (0) // Typically set to 0 to use the default address.
                                               // - For touchs with only one address, set to 0
                                               // - For touchs with multiple addresses, set to 0 or
                                               //   the address. Like GT911, there are two addresses:
                                               //   0x5D(default) and 0x14
-
-#elif ESP_PANEL_BOARD_TOUCH_BUS_TYPE == ESP_PANEL_BUS_TYPE_SPI
-
-/**
- * @brief SPI bus
- */
-/* For general */
-#define ESP_PANEL_BOARD_TOUCH_SPI_HOST_ID (1) // Typically set to 1
-#if !ESP_PANEL_BOARD_TOUCH_BUS_SKIP_INIT_HOST
-/* For host */
-#define ESP_PANEL_BOARD_TOUCH_SPI_IO_SCK (7)
-#define ESP_PANEL_BOARD_TOUCH_SPI_IO_MOSI (6)
-#define ESP_PANEL_BOARD_TOUCH_SPI_IO_MISO (9)
-#endif
-/* For panel */
-#define ESP_PANEL_BOARD_TOUCH_SPI_IO_CS (5)
-#define ESP_PANEL_BOARD_TOUCH_SPI_CLK_HZ (1 * 1000 * 1000) // Should be integer divisor of 80M
-
-#else
-
-#error "The function is not ready and will be implemented in the future."
 
 #endif // ESP_PANEL_BOARD_TOUCH_BUS_TYPE
 
@@ -312,7 +198,7 @@
  */
 #define ESP_PANEL_BOARD_TOUCH_RST_IO (-1)   // Reset pin, -1 if not used
 #define ESP_PANEL_BOARD_TOUCH_RST_LEVEL (0) // Reset active level, 0: low, 1: high
-#define ESP_PANEL_BOARD_TOUCH_INT_IO (4)    // Interrupt pin, set to GPIO4
+#define ESP_PANEL_BOARD_TOUCH_INT_IO (4)    // Interrupt pin, -1 if not used
 #define ESP_PANEL_BOARD_TOUCH_INT_LEVEL (0) // Interrupt active level, 0: low, 1: high
 
 #endif // ESP_PANEL_BOARD_USE_TOUCH
@@ -330,12 +216,6 @@
 #if ESP_PANEL_BOARD_USE_BACKLIGHT
 /**
  * @brief Backlight control type selection
- *
- * Supported types:
- * - `ESP_PANEL_BACKLIGHT_TYPE_SWITCH_GPIO`: Use GPIO switch to control the backlight, only support on/off
- * - `ESP_PANEL_BACKLIGHT_TYPE_SWITCH_EXPANDER`: Use IO expander to control the backlight, only support on/off
- * - `ESP_PANEL_BACKLIGHT_TYPE_PWM_LEDC`: Use LEDC PWM to control the backlight, support brightness adjustment
- * - `ESP_PANEL_BACKLIGHT_TYPE_CUSTOM`: Use custom function to control the backlight
  */
 #define ESP_PANEL_BOARD_BACKLIGHT_TYPE (ESP_PANEL_BACKLIGHT_TYPE_PWM_LEDC)
 
@@ -405,12 +285,6 @@
 #if ESP_PANEL_BOARD_USE_EXPANDER
 /**
  * @brief IO expander chip selection
- *
- * Supported chips:
- * - `CH422G`
- * - `HT8574`
- * - `TCA95XX_8BIT`
- * - `TCA95XX_16BIT`
  */
 #define ESP_PANEL_BOARD_EXPANDER_CHIP TCA95XX_8BIT
 
@@ -446,90 +320,6 @@
 /////////////////////// Please utilize the following macros to execute any additional code if required /////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- * @brief Pre-begin function for board initialization
- *
- * @param[in] p Pointer to the board object
- * @return true on success, false on failure
- */
-/*
-#define ESP_PANEL_BOARD_PRE_BEGIN_FUNCTION(p) \
-    {  \
-        auto board = static_cast<Board *>(p);  \
-        return true;    \
-    }
-*/
-
-/**
- * @brief Post-begin function for board initialization
- *
- * @param[in] p Pointer to the board object
- * @return true on success, false on failure
- */
-/*
-#define ESP_PANEL_BOARD_POST_BEGIN_FUNCTION(p) \
-    {  \
-        auto board = static_cast<Board *>(p);  \
-        return true;    \
-    }
-*/
-
-/**
- * @brief Pre-delete function for board initialization
- *
- * @param[in] p Pointer to the board object
- * @return true on success, false on failure
- */
-/*
-#define ESP_PANEL_BOARD_PRE_DEL_FUNCTION(p) \
-    {  \
-        auto board = static_cast<Board *>(p);  \
-        return true;    \
-    }
-*/
-
-/**
- * @brief Post-delete function for board initialization
- *
- * @param[in] p Pointer to the board object
- * @return true on success, false on failure
- */
-/*
-#define ESP_PANEL_BOARD_POST_DEL_FUNCTION(p) \
-    {  \
-        auto board = static_cast<Board *>(p);  \
-        return true;    \
-    }
-*/
-
-/**
- * @brief Pre-begin function for IO expander initialization
- *
- * @param[in] p Pointer to the board object
- * @return true on success, false on failure
- */
-/*
-#define ESP_PANEL_BOARD_EXPANDER_PRE_BEGIN_FUNCTION(p) \
-    {  \
-        auto board = static_cast<Board *>(p);  \
-        return true;    \
-    }
-*/
-
-/**
- * @brief Post-begin function for IO expander initialization
- *
- * @param[in] p Pointer to the board object
- * @return true on success, false on failure
- */
-/*
-#define ESP_PANEL_BOARD_EXPANDER_POST_BEGIN_FUNCTION(p) \
-    {  \
-        auto board = static_cast<Board *>(p);  \
-        return true;    \
-    }
-*/
-
-/**
  * @brief Pre-begin function for LCD initialization
  *
  * @param[in] p Pointer to the board object
@@ -550,74 +340,24 @@
   }
 
 /**
- * @brief Post-begin function for LCD initialization
- *
- * @param[in] p Pointer to the board object
- * @return true on success, false on failure
- */
-/*
-#define ESP_PANEL_BOARD_LCD_POST_BEGIN_FUNCTION(p) \
-    {  \
-        auto board = static_cast<Board *>(p);  \
-        return true;    \
-    }
-*/
-
-/**
  * @brief Pre-begin function for touch panel initialization
  *
  * @param[in] p Pointer to the board object
  * @return true on success, false on failure
  */
-/*
-#define ESP_PANEL_BOARD_TOUCH_PRE_BEGIN_FUNCTION(p) \
-    {  \
-        auto board = static_cast<Board *>(p);  \
-        return true;    \
-    }
-*/
-
-/**
- * @brief Post-begin function for touch panel initialization
- *
- * @param[in] p Pointer to the board object
- * @return true on success, false on failure
- */
-/*
-#define ESP_PANEL_BOARD_TOUCH_POST_BEGIN_FUNCTION(p) \
-    {  \
-        auto board = static_cast<Board *>(p);  \
-        return true;    \
-    }
-*/
-
-/**
- * @brief Pre-begin function for backlight initialization
- *
- * @param[in] p Pointer to the board object
- * @return true on success, false on failure
- */
-/*
-#define ESP_PANEL_BOARD_BACKLIGHT_PRE_BEGIN_FUNCTION(p) \
-    {  \
-        auto board = static_cast<Board *>(p);  \
-        return true;    \
-    }
-*/
-
-/**
- * @brief Post-begin function for backlight initialization
- *
- * @param[in] p Pointer to the board object
- * @return true on success, false on failure
- */
-/*
-#define ESP_PANEL_BOARD_BACKLIGHT_POST_BEGIN_FUNCTION(p) \
-    {  \
-        auto board = static_cast<Board *>(p);  \
-        return true;    \
-    }
-*/
+#define ESP_PANEL_BOARD_TOUCH_PRE_BEGIN_FUNCTION(p)     \
+  {                                                     \
+    constexpr int TP_RST = 0;                           \
+    auto board = static_cast<Board *>(p);               \
+    auto expander = board->getIO_Expander()->getBase(); \
+    /* Touch reset */                                   \
+    expander->pinMode(TP_RST, OUTPUT);                  \
+    expander->digitalWrite(TP_RST, LOW);                \
+    vTaskDelay(pdMS_TO_TICKS(30));                      \
+    expander->digitalWrite(TP_RST, HIGH);               \
+    vTaskDelay(pdMS_TO_TICKS(50));                      \
+    return true;                                        \
+  }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////// File Version ///////////////////////////////////////////////////////////

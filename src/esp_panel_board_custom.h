@@ -8,7 +8,6 @@
 
 // *INDENT-OFF*
 // Fixes source file incorrectly selecting SPI instead of QSPI
-#include <ESP_PanelTypes.h>
 
 /* Set to 1 if using a custom board */
 #define ESP_PANEL_USE_CUSTOM_BOARD (1) // 0/1
@@ -62,24 +61,8 @@
  * https://docs.espressif.com/projects/esp-iot-solution/en/latest/display/lcd/index.html for more details.
  *
  */
-#if ESP_PANEL_LCD_BUS_TYPE == ESP_PANEL_BUS_TYPE_SPI
 
-#define ESP_PANEL_LCD_BUS_HOST_ID (1) // Typically set to 1
-#define ESP_PANEL_LCD_SPI_IO_CS (21)
-#if !ESP_PANEL_LCD_BUS_SKIP_INIT_HOST
-#define ESP_PANEL_LCD_SPI_IO_SCK (40)
-#define ESP_PANEL_LCD_SPI_IO_MOSI (6)
-#define ESP_PANEL_LCD_SPI_IO_MISO (-1) // -1 if not used
-#endif
-#define ESP_PANEL_LCD_SPI_IO_DC (4)
-#define ESP_PANEL_LCD_SPI_MODE (0) // 0/1/2/3, typically set to 0
-#define ESP_PANEL_LCD_SPI_CLK_HZ (40 * 1000 * 1000)
-// Should be an integer divisor of 80M, typically set to 40M
-#define ESP_PANEL_LCD_SPI_TRANS_QUEUE_SZ (10) // Typically set to 10
-#define ESP_PANEL_LCD_SPI_CMD_BITS (8)        // Typically set to 8
-#define ESP_PANEL_LCD_SPI_PARAM_BITS (8)      // Typically set to 8
-
-#elif ESP_PANEL_LCD_BUS_TYPE == ESP_PANEL_BUS_TYPE_QSPI
+#if ESP_PANEL_LCD_BUS_TYPE == ESP_PANEL_BUS_TYPE_QSPI
 
 #define ESP_PANEL_LCD_BUS_HOST_ID (1) // Typically set to 1
 #define ESP_PANEL_LCD_SPI_IO_CS (21)
@@ -220,7 +203,7 @@
 //////////////////////////// Please update the following macros to configure the touch panel ///////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /* Set to 1 when using an touch panel */
-#define ESP_PANEL_USE_TOUCH (0) // 0/1
+#define ESP_PANEL_USE_TOUCH (1) // 0/1
 #if ESP_PANEL_USE_TOUCH
 /**
  * Touch controller name. Choose one of the following:
@@ -262,8 +245,8 @@
 // Typically set to 400K
 #define ESP_PANEL_TOUCH_I2C_SCL_PULLUP (1) // 0/1
 #define ESP_PANEL_TOUCH_I2C_SDA_PULLUP (1) // 0/1
-#define ESP_PANEL_TOUCH_I2C_IO_SCL (3)
-#define ESP_PANEL_TOUCH_I2C_IO_SDA (1)
+#define ESP_PANEL_TOUCH_I2C_IO_SCL (10)
+#define ESP_PANEL_TOUCH_I2C_IO_SDA (11)
 #endif
 
 #elif ESP_PANEL_TOUCH_BUS_TYPE == ESP_PANEL_BUS_TYPE_SPI
@@ -348,8 +331,8 @@
 // Typically set to 400K
 #define ESP_PANEL_EXPANDER_I2C_SCL_PULLUP (1) // 0/1
 #define ESP_PANEL_EXPANDER_I2C_SDA_PULLUP (1) // 0/1
-#define ESP_PANEL_EXPANDER_I2C_IO_SCL (18)
-#define ESP_PANEL_EXPANDER_I2C_IO_SDA (8)
+#define ESP_PANEL_EXPANDER_I2C_IO_SCL (10)
+#define ESP_PANEL_EXPANDER_I2C_IO_SDA (11)
 #endif
 #endif /* ESP_PANEL_USE_EXPANDER */
 

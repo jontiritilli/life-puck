@@ -1,3 +1,4 @@
+#include <string.h>
 /*
  * SPDX-FileCopyrightText: 2024-2025 Espressif Systems (Shanghai) CO LTD
  *
@@ -37,17 +38,18 @@ void gui_task(void *pvParameters);
 void setup()
 {
   Serial.begin(115200);
+  vTaskDelay(100 / portTICK_PERIOD_MS); // Allow serial port to initialize
 
-  Serial.println("Initializing board");
-  power_init();
+  printf("Initializing board");
   board->init();
   assert(board->begin());
+  power_init();
   create_task(gui_task, "gui_task", 4096, NULL, 1, NULL);
 }
 
 void loop()
 {
-  vTaskDelay(1000 / portTICK_PERIOD_MS);
+  vTaskDelay(10 / portTICK_PERIOD_MS);
   power_loop();
 }
 
@@ -66,7 +68,7 @@ BaseType_t create_task(TaskFunction_t task_function, const char *task_name, uint
 
 void gui_task(void *pvParameters)
 {
-  Serial.println("Initializing LVGL");
+  printf("Initializing LVGL");
   lv_init();
 
   lv_tick_set_cb(xTaskGetTickCount);
@@ -79,10 +81,10 @@ void gui_task(void *pvParameters)
   uint32_t *buf2 = (uint32_t *)malloc(BUFFER_SIZE / 2 * sizeof(uint32_t));
   if (!buf1 || !buf2)
   {
-    Serial.println("[LVGL] ERROR: Display buffer allocation failed!");
+    printf("[LVGL] ERROR: Display buffer allocation failed!");
     while (1)
     {
-      vTaskDelay(1000 / portTICK_PERIOD_MS);
+      vTaskDelay(20 / portTICK_PERIOD_MS);
     }
   }
 
@@ -90,9 +92,10 @@ void gui_task(void *pvParameters)
   lv_display_set_buffers(display, buf1, buf2, BUFFER_SIZE, LV_DISPLAY_RENDER_MODE_PARTIAL);
   lv_display_set_flush_cb(display, flush_cb);
 
-  Serial.println("Creating UI");
+  printf("Creating UI");
 
   ui_init();
+  init_touch();
 
   // Step 4: Main GUI loop (LVGL 9.3)
   while (1)

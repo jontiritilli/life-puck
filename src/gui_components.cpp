@@ -2,18 +2,10 @@
 #include <lvgl.h>
 #include <stdio.h>
 #include "gui_components.h"
+#include "gestures/gestures.h"
 #include "math.h"
-#define SCREEN_WIDTH 360
-#define SCREEN_HEIGHT 360
-
-#define ARC_OUTER_DIAMETER 360 // 1px margin all around for 360x360 screen
-#define ARC_INNER_DIAMETER 340
-#define ARC_WIDTH (ARC_OUTER_DIAMETER - ARC_INNER_DIAMETER)
-#define LIFE_STD_START 40
-
-#define GREEN_COLOR lv_color_hex(0x00FF00)  // RGB for green
-#define YELLOW_COLOR lv_color_hex(0xFFFF00) // RGB for yellow
-#define RED_COLOR lv_color_hex(0xFF0000)    // RGB for red
+#include <esp_display_panel.hpp>
+#include "touch/touch.h"
 
 typedef struct
 {
@@ -150,7 +142,7 @@ static void tap_gesture_cb(lv_event_t *e)
   }
 
   // Create overlay for feedback
-  printf("[tap_gesture_cb] Creating overlay for tap feedback\n");
+  // printf("[tap_gesture_cb] Creating overlay for tap feedback\n");
   lv_obj_t *overlay = lv_obj_create(active_screen);
   lv_obj_set_size(overlay, SCREEN_WIDTH / 2, SCREEN_HEIGHT);
   lv_obj_set_style_bg_opa(overlay, LV_OPA_40, LV_PART_MAIN);
@@ -161,7 +153,7 @@ static void tap_gesture_cb(lv_event_t *e)
   lv_obj_clear_flag(overlay, LV_OBJ_FLAG_GESTURE_BUBBLE); // Ensure overlay is non-interactive
   if (is_right)
   {
-    printf("[tap_gesture_cb] Tap on right, incrementing life\n");
+    // printf("[tap_gesture_cb] Tap on right, incrementing life\n");
     lv_obj_align(overlay, LV_ALIGN_TOP_RIGHT, 0, 0);
     // Always yellow for tap feedback
     lv_obj_set_style_bg_color(overlay, lv_color_make(0xB0, 0xF9, 0xFF), LV_PART_MAIN);
@@ -169,7 +161,7 @@ static void tap_gesture_cb(lv_event_t *e)
   }
   else
   {
-    printf("[tap_gesture_cb] Tap on left, decrementing life\n");
+    // printf("[tap_gesture_cb] Tap on left, decrementing life\n");
     lv_obj_align(overlay, LV_ALIGN_TOP_LEFT, 0, 0);
     // Always yellow for tap feedback
     lv_obj_set_style_bg_color(overlay, lv_color_make(0xB0, 0xF9, 0xFF), LV_PART_MAIN);
@@ -266,7 +258,7 @@ static arc_segment_t life_to_arc(int life_total)
   if (arc_life > 40)
   {
     seg.start_angle = base_start;
-    seg.end_angle = (base_start + 360) % 360;
+    seg.end_angle = base_start + (int)arc_span; // Full arc span, not modulo 360
     seg.color = arc_color;
     return seg;
   }
@@ -357,7 +349,7 @@ void show_life_counter()
     life_label = lv_label_create(active_screen);
     lv_obj_add_flag(life_label, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(life_label, "0");                                // Always set text immediately
-    lv_obj_set_style_text_font(life_label, &lv_font_montserrat_48, 0); // Large font
+    lv_obj_set_style_text_font(life_label, &lv_font_montserrat_64, 0); // Large font
     lv_obj_set_style_text_color(life_label, lv_color_white(), 0);
     lv_obj_align(life_label, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_text_opa(life_label, LV_OPA_TRANSP, 0); // Start transparent
@@ -391,38 +383,38 @@ void show_life_counter()
   lv_obj_clear_flag(life_label, LV_OBJ_FLAG_HIDDEN);
   fade_in_obj(life_label, 1000, 0, NULL);
 
-  // // Add a transparent full-screen object to catch taps (only create once)
-  // if (!tap_layer)
-  // {
-  //   printf("[show_life_counter] Creating tap_layer\n");
-  //   tap_layer = lv_obj_create(active_screen);
-  //   lv_obj_set_size(tap_layer, SCREEN_WIDTH, SCREEN_HEIGHT);
-  //   lv_obj_align(tap_layer, LV_ALIGN_CENTER, 0, 0);
-  //   lv_obj_set_style_bg_color(tap_layer, lv_color_black(), LV_PART_MAIN);
-  //   lv_obj_set_style_bg_opa(tap_layer, LV_OPA_TRANSP, LV_PART_MAIN);
-  //   lv_obj_set_style_border_width(tap_layer, 0, LV_PART_MAIN);
-  //   lv_obj_add_event_cb(tap_layer, tap_gesture_cb, LV_EVENT_CLICKED, NULL);
-  // }
+  // Add a transparent, clickable tap layer to capture all touch events
+  if (!tap_layer)
+  {
+    printf("[show_life_counter] Creating tap_layer for touch events\n");
+    tap_layer = lv_obj_create(active_screen);
+    lv_obj_set_size(tap_layer, SCREEN_WIDTH, SCREEN_HEIGHT);
+    lv_obj_align(tap_layer, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_style_bg_opa(tap_layer, LV_OPA_TRANSP, LV_PART_MAIN);
+    lv_obj_set_style_border_width(tap_layer, 0, LV_PART_MAIN);
+    lv_obj_add_flag(tap_layer, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(tap_layer, lvgl_gesture_event_handler, LV_EVENT_ALL, NULL);
+  }
 }
 
 void ui_init(void)
 {
   // Create screen and all objects before loading
   active_screen = lv_obj_create(NULL);
+  // Now load the screen (all objects are hidden/transparent)
+  printf("[lv_create_main_gui] Loading screen\n");
+  lv_scr_load(active_screen);
+  init_gesture_handling(lv_scr_act());
   lv_obj_set_style_bg_color(active_screen, lv_color_black(), LV_PART_MAIN);
   lv_obj_set_style_bg_opa(active_screen, LV_OPA_COVER, LV_PART_MAIN);
   // Create "Life Puck" label (title)
   lv_obj_t *title_label = lv_label_create(active_screen);
   lv_label_set_text(title_label, "Life Puck");
-  lv_obj_set_style_text_font(title_label, &lv_font_montserrat_36, 0);
+  lv_obj_set_style_text_font(title_label, &lv_font_montserrat_48, 0);
   lv_obj_set_style_text_color(title_label, lv_color_white(), 0);
   lv_obj_set_style_text_opa(title_label, LV_OPA_TRANSP, 0);
   lv_obj_align(title_label, LV_ALIGN_CENTER, 0, SCREEN_HEIGHT / 9);
   lv_obj_add_flag(title_label, LV_OBJ_FLAG_HIDDEN);
-
-  // Now load the screen (all objects are hidden/transparent)
-  printf("[lv_create_main_gui] Loading screen\n");
-  lv_scr_load(active_screen);
 
   // Start fade-in for title label, then fade out and show life counter via show_life_counter()
   lv_obj_clear_flag(title_label, LV_OBJ_FLAG_HIDDEN);
@@ -438,4 +430,14 @@ void ui_init(void)
         show_life_counter();
       });
     } });
+
+  // Register gesture callbacks for tap and swipe
+  register_gesture_callback(GestureType::TapTop, []()
+                            { update_life_label(life_total + 1); });
+  register_gesture_callback(GestureType::TapBottom, []()
+                            { update_life_label(life_total - 1); });
+  register_gesture_callback(GestureType::SwipeUp, []()
+                            { update_life_label(life_total + 5); });
+  register_gesture_callback(GestureType::SwipeDown, []()
+                            { update_life_label(life_total - 5); });
 }
