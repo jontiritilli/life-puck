@@ -5,5 +5,5 @@
 
 #define ARC_WIDTH 20
 
-void init_life_counter();
+void init_life_counter_2P();
 void reset_life();

@@ -5,6 +5,14 @@
     "array": "cpp",
     "string": "cpp",
     "string_view": "cpp",
-    "span": "cpp"
+    "span": "cpp",
+    "deque": "cpp",
+    "list": "cpp",
+    "unordered_map": "cpp",
+    "unordered_set": "cpp",
+    "vector": "cpp",
+    "format": "cpp",
+    "initializer_list": "cpp",
+    "regex": "cpp"
   }
 }

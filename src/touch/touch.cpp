@@ -1,5 +1,5 @@
 #include <lvgl.h>
-#include "gui_components.h"
+#include "gui_main.h"
 #include "gestures/gestures.h"
 #include "esp_display_panel.hpp"
 

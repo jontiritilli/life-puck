@@ -1,15 +1,12 @@
-#include <string.h>
-/*
- * SPDX-FileCopyrightText: 2024-2025 Espressif Systems (Shanghai) CO LTD
- *
- * SPDX-License-Identifier: CC0-1.0
- */
-
 #include <Arduino.h>
-#include <esp_display_panel.hpp>
 #include <lvgl.h>
-#include "gui_components.h"
+#include "ArduinoNvs.h"
+#include "gui_main.h"
+#include <esp_display_panel.hpp>
+#include <string.h>
 #include "power_key/power_key.h"
+#include "constants/constants.h"
+#include "battery/battery_state.h"
 
 using namespace esp_panel::drivers;
 using namespace esp_panel::board;
@@ -38,19 +35,33 @@ void gui_task(void *pvParameters);
 void setup()
 {
   Serial.begin(115200);
-  vTaskDelay(100 / portTICK_PERIOD_MS); // Allow serial port to initialize
+  Serial.println("[setup] Serial initialized");
 
-  printf("Initializing board");
+  esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+  bool skip_full_init = (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0);
+
+  Serial.printf("[setup] Wakeup reason: %d\n", (int)wakeup_reason);
+  if (skip_full_init)
+  {
+    Serial.println("[setup] Woke from deep sleep via power button, skipping full init");
+    // e.g., board->getBacklight()->on(); restore state, etc.
+    // Optionally return early or only call minimal functions
+    return;
+  }
+  Serial.println("[setup] Initializing board");
   board->init();
   assert(board->begin());
-  power_init();
-  create_task(gui_task, "gui_task", 4096, NULL, 1, NULL);
+  // power_init();
+  Serial.println("[setup] Initializing battery");
+  battery_init();
+  Serial.println("[setup] Creating GUI task");
+  create_task(gui_task, "gui_task", 8192, NULL, 1, NULL);
 }
 
 void loop()
 {
   vTaskDelay(10 / portTICK_PERIOD_MS);
-  power_loop();
+  // power_loop();
 }
 
 BaseType_t create_task(TaskFunction_t task_function, const char *task_name, uint32_t stack_size, void *param, UBaseType_t priority, TaskHandle_t *task_handle)
@@ -68,7 +79,7 @@ BaseType_t create_task(TaskFunction_t task_function, const char *task_name, uint
 
 void gui_task(void *pvParameters)
 {
-  printf("Initializing LVGL");
+  Serial.println("Initializing LVGL");
   lv_init();
 
   lv_tick_set_cb(xTaskGetTickCount);
@@ -81,7 +92,7 @@ void gui_task(void *pvParameters)
   uint32_t *buf2 = (uint32_t *)malloc(BUFFER_SIZE / 2 * sizeof(uint32_t));
   if (!buf1 || !buf2)
   {
-    printf("[LVGL] ERROR: Display buffer allocation failed!");
+    Serial.println("[LVGL] ERROR: Display buffer allocation failed!");
     while (1)
     {
       vTaskDelay(20 / portTICK_PERIOD_MS);
@@ -92,7 +103,7 @@ void gui_task(void *pvParameters)
   lv_display_set_buffers(display, buf1, buf2, BUFFER_SIZE, LV_DISPLAY_RENDER_MODE_PARTIAL);
   lv_display_set_flush_cb(display, flush_cb);
 
-  printf("Creating UI");
+  Serial.println("Creating UI");
 
   ui_init();
   init_touch();

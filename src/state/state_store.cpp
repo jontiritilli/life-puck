@@ -1,84 +1,58 @@
+
+
 #include "state_store.h"
+#include <ArduinoNvs.h>
 
-StateStore::StateStore(const char *ns) : nsName(ns) {}
-StateStore::~StateStore()
+// Global instance definition
+StateStore player_store("player");
+
+// StateStore method implementations
+StateStore::StateStore(const char *ns) : nsName(ns)
 {
-  if (isOpen)
-    prefs.end();
+  static bool nvs_global_initialized = false;
+  if (!nvs_global_initialized)
+  {
+    NVS.begin(); // Initialize global NVS partition once
+    nvs_global_initialized = true;
+  }
+  nvs.begin(nsName); // Initialize the namespace for this instance
 }
 
-void StateStore::begin(bool readOnly)
+StateStore::~StateStore() {}
+
+void StateStore::putInt(String key, u_int64_t value)
 {
-  if (!isOpen)
-  {
-    prefs.begin(nsName.c_str(), readOnly);
-    isOpen = true;
-  }
+  nvs.setInt(key, value);
 }
-void StateStore::end()
+
+u_int64_t StateStore::getInt(String key, u_int64_t defaultValue)
 {
-  if (isOpen)
-  {
-    prefs.end();
-    isOpen = false;
-  }
+  return nvs.getInt(key, defaultValue);
 }
-void StateStore::putU8(const char *key, uint8_t value)
+
+void StateStore::putString(String key, String value)
 {
-  begin(false);
-  prefs.putUChar(key, value);
-  end();
+  nvs.setString(key, value.c_str());
 }
-uint8_t StateStore::getU8(const char *key, uint8_t def)
+
+String StateStore::getString(String key, String defaultValue)
 {
-  begin(true);
-  uint8_t v = prefs.getUChar(key, def);
-  end();
-  return v;
+  return nvs.getString(key, defaultValue.c_str());
 }
-void StateStore::putInt(const char *key, int value)
+
+void StateStore::setLife(u_int64_t value)
 {
-  begin(false);
-  prefs.putInt(key, value);
-  end();
+  putInt("life", value);
 }
-int StateStore::getInt(const char *key, int def)
+
+u_int64_t StateStore::getLife(u_int64_t defaultValue)
 {
-  begin(true);
-  int v = prefs.getInt(key, def);
-  end();
-  return v;
-}
-void StateStore::putBool(const char *key, bool value)
-{
-  putU8(key, value ? 1 : 0);
-}
-bool StateStore::getBool(const char *key, bool def)
-{
-  return getU8(key, def ? 1 : 0) != 0;
-}
-void StateStore::putString(const char *key, const String &value)
-{
-  begin(false);
-  prefs.putString(key, value);
-  end();
-}
-String StateStore::getString(const char *key, const String &def)
-{
-  begin(true);
-  String v = prefs.getString(key, def);
-  end();
-  return v;
-}
-void StateStore::remove(const char *key)
-{
-  begin(false);
-  prefs.remove(key);
-  end();
-}
-void StateStore::clear()
-{
-  begin(false);
-  prefs.clear();
-  end();
+  printf("[StateStore::getLife] Retrieving life with default %llu\n", defaultValue);
+  // Use the NVS instance to get the life value
+  // This will return the default value if not set
+  // or if an error occurs
+  u_int64_t life = nvs.getInt("life", defaultValue);
+  printf("[StateStore::getLife] Retrieved life: %llu\n", life);
+
+  return life;
 }

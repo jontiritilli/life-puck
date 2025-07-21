@@ -56,9 +56,9 @@ void wake_up(void)
 void fall_asleep(void)
 {
   printf("[fall_asleep] Enabling wakeup on PWR_KEY_Input_PIN, entering deep sleep\n");
+  set_screen_on(false);
   digitalWrite(PWR_Control_PIN, LOW);
   board->getBacklight()->off();
-  set_screen_on(false);
   while (is_button_pressed())
   {
     vTaskDelay(10);
@@ -101,18 +101,23 @@ void power_loop(void)
       // Button was just pressed
       button_press_start = now;
     }
-    // If long press threshold reached, enter deep sleep immediately
-    if ((now - button_press_start) >= Device_Sleep_Time)
+    // Wake up on short hold, sleep on long hold
+    if (wait_for_button_hold(Device_Sleep_Time))
     {
-      printf("[power_loop] Button held, going to sleep\n");
+      printf("[power_loop] Button held for sleep, going to sleep\n");
       fall_asleep();
+    }
+    else if (wait_for_button_hold(Device_Wake_Time))
+    {
+      printf("[power_loop] Button held for wake, waking up\n");
+      wake_up();
     }
   }
   else
   {
     if (prev_button_state)
     {
-      if ((now - button_press_start) < Device_Sleep_Time && (now - last_toggle_time > debounce_ms))
+      if (!wait_for_button_hold(Device_Sleep_Time))
       {
         printf("[power_loop] Toggling screen\n");
         toggle_screen();
