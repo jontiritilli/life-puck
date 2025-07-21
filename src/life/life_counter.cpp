@@ -32,16 +32,19 @@ void reset_life();
 
 // Call this after boot animation to show the life counter
 void init_life_counter()
+{
   // Clean up previous objects if switching modes
-  if (life_arc) {
+  if (life_arc)
+  {
     lv_obj_del(life_arc);
     life_arc = nullptr;
   }
-  if (life_label) {
+  if (life_label)
+  {
     lv_obj_del(life_label);
     life_label = nullptr;
   }
-{
+
   max_life = player_store.getLife(LIFE_STD_START);
   int stored_life = max_life;
   // Only create arc and label if they do not exist

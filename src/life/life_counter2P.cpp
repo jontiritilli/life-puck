@@ -1,11 +1,11 @@
 #include <state/state_store.h>
 #include "Arduino.h"
-#include <life/life_counter.h>
 #include <helpers/animation_helpers.h>
 #include <lvgl.h>
 #include <math.h>
 #include <stdio.h>
 #include <gestures/gestures.h>
+#include "life_counter2P.h"
 // --- Arc Segment Definition ---
 typedef struct
 {
@@ -45,123 +45,134 @@ static bool gesture_active = false;
 // Call this after boot animation to show the two-player life counter
 void init_life_counter_2P()
 {
-  // Add a thin yellow vertical line at the center of the screen
-  static lv_obj_t *center_line = nullptr;
-  if (!center_line)
+  // Clean up previous objects before creating new ones
+  if (life_arc_p1)
   {
-    static lv_point_precise_t line_points[2];
-    line_points[0].x = SCREEN_WIDTH / 2;
-    line_points[0].y = 0;
-    line_points[1].x = SCREEN_WIDTH / 2;
-    line_points[1].y = SCREEN_HEIGHT;
-    center_line = lv_line_create(lv_scr_act());
-    lv_line_set_points(center_line, line_points, 2);
-    lv_obj_set_style_line_color(center_line, YELLOW_COLOR, 0);
-    lv_obj_set_style_line_width(center_line, 3, 0); // Thin line
-    lv_obj_set_style_line_opa(center_line, LV_OPA_COVER, 0);
-    lv_obj_set_style_line_rounded(center_line, 1, 0);
-    max_life = player_store.getLife(LIFE_STD_START);
-    int start_life_p1 = max_life; // Player 1
-    int start_life_p2 = max_life; // Player 2
+    lv_obj_del(life_arc_p1);
+    life_arc_p1 = nullptr;
+  }
+  if (life_arc_p2)
+  {
+    lv_obj_del(life_arc_p2);
+    life_arc_p2 = nullptr;
+  }
+  if (life_label_p1)
+  {
+    lv_obj_del(life_label_p1);
+    life_label_p1 = nullptr;
+  }
+  if (life_label_p2)
+  {
+    lv_obj_del(life_label_p2);
+    life_label_p2 = nullptr;
+  }
+  // Optionally clean up center line if needed
+  static lv_obj_t *center_line = nullptr;
+  if (center_line)
+  {
+    lv_obj_del(center_line);
+    center_line = nullptr;
+  }
+  // Add a thin yellow vertical line at the center of the screen
+  static lv_point_precise_t line_points[2];
+  line_points[0].x = SCREEN_WIDTH / 2;
+  line_points[0].y = 0;
+  line_points[1].x = SCREEN_WIDTH / 2;
+  line_points[1].y = SCREEN_HEIGHT;
+  center_line = lv_line_create(lv_scr_act());
+  lv_line_set_points(center_line, line_points, 2);
+  lv_obj_set_style_line_color(center_line, YELLOW_COLOR, 0);
+  lv_obj_set_style_line_width(center_line, 1, 0); // Very Thin line
+  lv_obj_set_style_line_opa(center_line, LV_OPA_COVER, 0);
+  lv_obj_set_style_line_rounded(center_line, 1, 0);
+  max_life = player_store.getLife(LIFE_STD_START);
+  int start_life_p1 = max_life; // Player 1
+  int start_life_p2 = max_life; // Player 2
 
-    // Create arc/label for Player 1 (sweep left: 90° to 0°, centered)
-    if (!life_arc_p1)
-    {
-      life_arc_p1 = lv_arc_create(lv_scr_act());
-      lv_obj_add_flag(life_arc_p1, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_set_size(life_arc_p1, ARC_OUTER_DIAMETER, ARC_OUTER_DIAMETER);
-      lv_obj_align(life_arc_p1, LV_ALIGN_CENTER, 0, 0);
-      lv_arc_set_bg_angles(life_arc_p1, 0, 360); // left sweep background
-      lv_arc_set_angles(life_arc_p1, 90, 270);   // indicator starts at bottom center
-      lv_obj_set_style_arc_color(life_arc_p1, GREEN_COLOR, LV_PART_INDICATOR);
-      lv_obj_set_style_arc_opa(life_arc_p1, LV_OPA_TRANSP, LV_PART_MAIN);
-      lv_obj_set_style_arc_width(life_arc_p1, 0, LV_PART_MAIN);
-      lv_obj_set_style_arc_width(life_arc_p1, ARC_WIDTH, LV_PART_INDICATOR);
-      lv_obj_set_style_arc_rounded(life_arc_p1, 0, LV_PART_INDICATOR);
-      lv_obj_remove_style(life_arc_p1, NULL, LV_PART_KNOB);
-      lv_obj_clear_flag(life_arc_p1, LV_OBJ_FLAG_CLICKABLE);
-    }
-    if (!life_label_p1)
-    {
-      life_label_p1 = lv_label_create(lv_scr_act());
-      lv_obj_add_flag(life_label_p1, LV_OBJ_FLAG_HIDDEN);
-      lv_label_set_text(life_label_p1, "0");
-      lv_obj_set_style_text_font(life_label_p1, &lv_font_montserrat_64, 0);
-      lv_obj_set_style_text_color(life_label_p1, lv_color_white(), 0);
-      lv_obj_align(life_label_p1, LV_ALIGN_CENTER, -ARC_OUTER_DIAMETER / 4, 0);
-      lv_obj_set_style_text_opa(life_label_p1, LV_OPA_TRANSP, 0);
-    }
+  // Create arc/label for Player 1 (sweep left: 90° to 0°, centered)
+  life_arc_p1 = lv_arc_create(lv_scr_act());
+  lv_obj_add_flag(life_arc_p1, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_set_size(life_arc_p1, ARC_OUTER_DIAMETER, ARC_OUTER_DIAMETER);
+  lv_obj_align(life_arc_p1, LV_ALIGN_CENTER, 0, 0);
+  lv_arc_set_bg_angles(life_arc_p1, 0, 360); // left sweep background
+  lv_arc_set_angles(life_arc_p1, 90, 270);   // indicator starts at bottom center
+  lv_obj_set_style_arc_color(life_arc_p1, GREEN_COLOR, LV_PART_INDICATOR);
+  lv_obj_set_style_arc_opa(life_arc_p1, LV_OPA_TRANSP, LV_PART_MAIN);
+  lv_obj_set_style_arc_width(life_arc_p1, 0, LV_PART_MAIN);
+  lv_obj_set_style_arc_width(life_arc_p1, ARC_WIDTH_2P, LV_PART_INDICATOR);
+  lv_obj_set_style_arc_rounded(life_arc_p1, 0, LV_PART_INDICATOR);
+  lv_obj_remove_style(life_arc_p1, NULL, LV_PART_KNOB);
+  lv_obj_clear_flag(life_arc_p1, LV_OBJ_FLAG_CLICKABLE);
 
-    // Create arc/label for Player 2 (sweep right: 90° to 180°, centered)
-    if (!life_arc_p2)
-    {
-      life_arc_p2 = lv_arc_create(lv_scr_act());
-      lv_obj_add_flag(life_arc_p2, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_set_size(life_arc_p2, ARC_OUTER_DIAMETER, ARC_OUTER_DIAMETER);
-      lv_obj_align(life_arc_p2, LV_ALIGN_CENTER, 0, 0);
-      lv_arc_set_bg_angles(life_arc_p2, 0, 360);         // right sweep background
-      lv_arc_set_angles(life_arc_p2, 270, 90);           // indicator starts at top center, grows counterclockwise
-      lv_arc_set_mode(life_arc_p2, LV_ARC_MODE_REVERSE); // Enable reverse mode for counterclockwise sweep
-      lv_obj_set_style_arc_color(life_arc_p2, GREEN_COLOR, LV_PART_INDICATOR);
-      lv_obj_set_style_arc_opa(life_arc_p2, LV_OPA_TRANSP, LV_PART_MAIN);
-      lv_obj_set_style_arc_width(life_arc_p2, 0, LV_PART_MAIN);
-      lv_obj_set_style_arc_width(life_arc_p2, ARC_WIDTH, LV_PART_INDICATOR);
-      lv_obj_set_style_arc_rounded(life_arc_p2, 0, LV_PART_INDICATOR);
-      lv_obj_remove_style(life_arc_p2, NULL, LV_PART_KNOB);
-      lv_obj_clear_flag(life_arc_p2, LV_OBJ_FLAG_CLICKABLE);
-    }
-    if (!life_label_p2)
-    {
-      life_label_p2 = lv_label_create(lv_scr_act());
-      lv_obj_add_flag(life_label_p2, LV_OBJ_FLAG_HIDDEN);
-      lv_label_set_text(life_label_p2, "0");
-      lv_obj_set_style_text_font(life_label_p2, &lv_font_montserrat_64, 0);
-      lv_obj_set_style_text_color(life_label_p2, lv_color_white(), 0);
-      lv_obj_align(life_label_p2, LV_ALIGN_CENTER, ARC_OUTER_DIAMETER / 4, 0);
-    }
-    // Show arcs and animate sweep while fading in the life labels in parallel
-    if (life_arc_p1)
-    {
-      lv_obj_clear_flag(life_arc_p1, LV_OBJ_FLAG_HIDDEN);
-      update_life_label_p1(start_life_p1);
-      lv_obj_set_style_arc_opa(life_arc_p1, LV_OPA_COVER, LV_PART_INDICATOR);
-      lv_anim_t anim1;
-      lv_anim_init(&anim1);
-      lv_anim_set_var(&anim1, NULL);
-      lv_anim_set_exec_cb(&anim1, arc_sweep_anim_cb_p1);
-      lv_anim_set_values(&anim1, 0, start_life_p1);
-      lv_anim_set_time(&anim1, 2000);
-      lv_anim_set_delay(&anim1, 0);
-      lv_anim_set_ready_cb(&anim1, arc_sweep_anim_ready_cb);
-      lv_anim_start(&anim1);
-    }
-    if (life_arc_p2)
-    {
-      lv_obj_clear_flag(life_arc_p2, LV_OBJ_FLAG_HIDDEN);
-      update_life_label_p2(start_life_p2);
-      lv_obj_set_style_arc_opa(life_arc_p2, LV_OPA_COVER, LV_PART_INDICATOR);
-      lv_anim_t anim2;
-      lv_anim_init(&anim2);
-      lv_anim_set_var(&anim2, NULL);
-      lv_anim_set_exec_cb(&anim2, arc_sweep_anim_cb_p2);
-      lv_anim_set_values(&anim2, 0, start_life_p2);
-      lv_anim_set_time(&anim2, 2000);
-      lv_anim_set_delay(&anim2, 0);
-      lv_anim_set_ready_cb(&anim2, arc_sweep_anim_ready_cb);
-      lv_anim_start(&anim2);
-    }
+  life_label_p1 = lv_label_create(lv_scr_act());
+  lv_obj_add_flag(life_label_p1, LV_OBJ_FLAG_HIDDEN);
+  lv_label_set_text(life_label_p1, "0");
+  lv_obj_set_style_text_font(life_label_p1, &lv_font_montserrat_64, 0);
+  lv_obj_set_style_text_color(life_label_p1, lv_color_white(), 0);
+  lv_obj_align(life_label_p1, LV_ALIGN_CENTER, -ARC_OUTER_DIAMETER / 4, 0);
+  lv_obj_set_style_text_opa(life_label_p1, LV_OPA_TRANSP, 0);
 
-    // Fade in the life labels
-    lv_obj_clear_flag(life_label_p1, LV_OBJ_FLAG_HIDDEN);
-    fade_in_obj(life_label_p1, 1000, 0, NULL);
-    lv_obj_clear_flag(life_label_p2, LV_OBJ_FLAG_HIDDEN);
-    fade_in_obj(life_label_p2, 1000, 0, NULL);
+  // Create arc/label for Player 2 (sweep right: 90° to 180°, centered)
+  life_arc_p2 = lv_arc_create(lv_scr_act());
+  lv_obj_add_flag(life_arc_p2, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_set_size(life_arc_p2, ARC_OUTER_DIAMETER, ARC_OUTER_DIAMETER);
+  lv_obj_align(life_arc_p2, LV_ALIGN_CENTER, 0, 0);
+  lv_arc_set_bg_angles(life_arc_p2, 0, 360);         // right sweep background
+  lv_arc_set_angles(life_arc_p2, 270, 90);           // indicator starts at top center, grows counterclockwise
+  lv_arc_set_mode(life_arc_p2, LV_ARC_MODE_REVERSE); // Enable reverse mode for counterclockwise sweep
+  lv_obj_set_style_arc_color(life_arc_p2, GREEN_COLOR, LV_PART_INDICATOR);
+  lv_obj_set_style_arc_opa(life_arc_p2, LV_OPA_TRANSP, LV_PART_MAIN);
+  lv_obj_set_style_arc_width(life_arc_p2, 0, LV_PART_MAIN);
+  lv_obj_set_style_arc_width(life_arc_p2, ARC_WIDTH_2P, LV_PART_INDICATOR);
+  lv_obj_set_style_arc_rounded(life_arc_p2, 0, LV_PART_INDICATOR);
+  lv_obj_remove_style(life_arc_p2, NULL, LV_PART_KNOB);
+  lv_obj_clear_flag(life_arc_p2, LV_OBJ_FLAG_CLICKABLE);
 
-    // Register gesture event handler for the screen
-    lv_obj_add_event_cb(lv_scr_act(), life_counter_gesture_event_handler, LV_EVENT_GESTURE, NULL);
-    // Register tap (clicked) event handler for the screen
-    lv_obj_add_event_cb(lv_scr_act(), [](lv_event_t *e)
-                        {
+  life_label_p2 = lv_label_create(lv_scr_act());
+  lv_obj_add_flag(life_label_p2, LV_OBJ_FLAG_HIDDEN);
+  lv_label_set_text(life_label_p2, "0");
+  lv_obj_set_style_text_font(life_label_p2, &lv_font_montserrat_64, 0);
+  lv_obj_set_style_text_color(life_label_p2, lv_color_white(), 0);
+  lv_obj_align(life_label_p2, LV_ALIGN_CENTER, ARC_OUTER_DIAMETER / 4, 0);
+
+  // Show arcs and animate sweep while fading in the life labels in parallel
+  lv_obj_clear_flag(life_arc_p1, LV_OBJ_FLAG_HIDDEN);
+  update_life_label_p1(start_life_p1);
+  lv_obj_set_style_arc_opa(life_arc_p1, LV_OPA_COVER, LV_PART_INDICATOR);
+  lv_anim_t anim1;
+  lv_anim_init(&anim1);
+  lv_anim_set_var(&anim1, NULL);
+  lv_anim_set_exec_cb(&anim1, arc_sweep_anim_cb_p1);
+  lv_anim_set_values(&anim1, 0, start_life_p1);
+  lv_anim_set_time(&anim1, 2000);
+  lv_anim_set_delay(&anim1, 0);
+  lv_anim_set_ready_cb(&anim1, arc_sweep_anim_ready_cb);
+  lv_anim_start(&anim1);
+
+  lv_obj_clear_flag(life_arc_p2, LV_OBJ_FLAG_HIDDEN);
+  update_life_label_p2(start_life_p2);
+  lv_obj_set_style_arc_opa(life_arc_p2, LV_OPA_COVER, LV_PART_INDICATOR);
+  lv_anim_t anim2;
+  lv_anim_init(&anim2);
+  lv_anim_set_var(&anim2, NULL);
+  lv_anim_set_exec_cb(&anim2, arc_sweep_anim_cb_p2);
+  lv_anim_set_values(&anim2, 0, start_life_p2);
+  lv_anim_set_time(&anim2, 2000);
+  lv_anim_set_delay(&anim2, 0);
+  lv_anim_set_ready_cb(&anim2, arc_sweep_anim_ready_cb);
+  lv_anim_start(&anim2);
+
+  // Fade in the life labels
+  lv_obj_clear_flag(life_label_p1, LV_OBJ_FLAG_HIDDEN);
+  fade_in_obj(life_label_p1, 1000, 0, NULL);
+  lv_obj_clear_flag(life_label_p2, LV_OBJ_FLAG_HIDDEN);
+  fade_in_obj(life_label_p2, 1000, 0, NULL);
+
+  // Register gesture event handler for the screen
+  lv_obj_add_event_cb(lv_scr_act(), life_counter_gesture_event_handler, LV_EVENT_GESTURE, NULL);
+  // Register tap (clicked) event handler for the screen
+  lv_obj_add_event_cb(lv_scr_act(), [](lv_event_t *e)
+                      {
     if (gesture_active) {
       gesture_active = false; // Reset for next event
       return;
@@ -186,7 +197,6 @@ void init_life_counter_2P()
       else
         decrement_life_p2(1);
     } }, LV_EVENT_CLICKED, NULL);
-  }
 }
 
 // Gesture event handler for two-player mode
