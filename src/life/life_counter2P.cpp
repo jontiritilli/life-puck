@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <gestures/gestures.h>
 #include "life_counter2P.h"
+#include <helpers/event_grouper.h>
 // --- Arc Segment Definition ---
 typedef struct
 {
@@ -38,9 +39,13 @@ void increment_life_p2(int value);
 void decrement_life_p2(int value);
 void reset_life_p2();
 static bool is_left_half(int x);
+void queue_life_change_2p(int player, int value);
 
 // Suppress tap after gesture
 static bool gesture_active = false;
+
+// Event grouping for 2P mode
+EventGrouper event_grouper_2p(1000); // 1s window for 2P
 
 // Call this after boot animation to show the two-player life counter
 void init_life_counter_2P()
@@ -242,13 +247,13 @@ static void life_counter_gesture_event_handler(lv_event_t *e)
 // Increment life total and update label for Player 1
 void increment_life_p1(int value)
 {
-  update_life_label_p1(life_total_p1 + value);
+  queue_life_change_2p(1, value);
 }
 
 // Decrement life total and update label for Player 1
 void decrement_life_p1(int value)
 {
-  update_life_label_p1(life_total_p1 - value);
+  queue_life_change_2p(1, -value);
 }
 
 // Reset life total for Player 1
@@ -261,13 +266,13 @@ void reset_life_p1()
 // Increment life total and update label for Player 2
 void increment_life_p2(int value)
 {
-  update_life_label_p2(life_total_p2 + value);
+  queue_life_change_2p(2, value);
 }
 
 // Decrement life total and update label for Player 2
 void decrement_life_p2(int value)
 {
-  update_life_label_p2(life_total_p2 - value);
+  queue_life_change_2p(2, -value);
 }
 
 // Reset life total for Player 2
@@ -477,4 +482,28 @@ static lv_color_t interpolate_color(lv_color_t c1, lv_color_t c2, uint8_t t)
 static bool is_left_half(int x)
 {
   return x < (SCREEN_WIDTH / 2);
+}
+
+// --- Event Handling for 2P Mode ---
+void life_counter2p_loop()
+{
+  if (event_grouper_2p.isCommitPending())
+  {
+    event_grouper_2p.update();
+  }
+}
+
+// Wrap life change for 2P
+void queue_life_change_2p(int player, int value)
+{
+  event_grouper_2p.handleChange(player, value, [](const LifeHistoryEvent &evt)
+                                {
+        if (evt.player_id == 1) {
+            life_total_p1 += evt.net_life_change;
+            update_life_label_p1(life_total_p1);
+        } else if (evt.player_id == 2) {
+            life_total_p2 += evt.net_life_change;
+            update_life_label_p2(life_total_p2);
+        }
+        printf("[EventGrouper2P] Committed: net_change=%d, player=%d, time=%lu\n", evt.net_life_change, evt.player_id, evt.timestamp); });
 }

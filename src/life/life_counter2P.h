@@ -8,3 +8,4 @@
 
 void init_life_counter_2P();
 void reset_life();
+void life_counter2p_loop();

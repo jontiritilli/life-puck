@@ -6,6 +6,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <gestures/gestures.h>
+#include <helpers/event_grouper.h>
 // --- Arc Segment Definition ---
 typedef struct
 {
@@ -20,6 +21,8 @@ static lv_obj_t *life_label = nullptr;
 int life_total = 0;
 static int max_life = LIFE_STD_START;
 
+EventGrouper event_grouper(1000);
+
 // --- Forward Declarations ---
 void update_life_label(int value);
 static void arc_sweep_anim_cb(void *var, int32_t value);
@@ -29,6 +32,7 @@ static lv_color_t interpolate_color(lv_color_t c1, lv_color_t c2, uint8_t t);
 void increment_life(int value);
 void decrement_life(int value);
 void reset_life();
+void queue_life_change(int player, int value);
 
 // Call this after boot animation to show the life counter
 void init_life_counter()
@@ -113,13 +117,13 @@ void init_life_counter()
 // Increment life total and update label
 void increment_life(int value)
 {
-  update_life_label(life_total + value);
+  queue_life_change(1, value);
 }
 
 // Decrement life total and update label
 void decrement_life(int value)
 {
-  update_life_label(life_total - value);
+  queue_life_change(1, -value);
 }
 
 // Reset life total to 0 and update label
@@ -299,4 +303,22 @@ static lv_color_t interpolate_color(lv_color_t c1, lv_color_t c2, uint8_t t)
   uint8_t g = (uint8_t)(g1 + ((int)g2 - (int)g1) * t / 255);
   uint8_t b = (uint8_t)(b1 + ((int)b2 - (int)b1) * t / 255);
   return lv_color_make(r, g, b);
+}
+
+// --- Event Handling for 2P Mode ---
+void life_counter_loop()
+{
+  if (event_grouper.isCommitPending())
+  {
+    event_grouper.update();
+  }
+}
+
+// Wrap life change for 2P
+void queue_life_change(int player, int value)
+{
+  event_grouper.handleChange(player, value, [](const LifeHistoryEvent &evt)
+                             {
+    life_total += evt.net_life_change;
+    update_life_label(life_total); });
 }

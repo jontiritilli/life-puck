@@ -7,9 +7,10 @@
 #include "life/life_counter2P.h"
 #include "menu/menu.h"
 #include "gui_main.h"
-#include "gestures/gestures.h"
+#include "main.h"
 #include "touch/touch.h"
 #include "helpers/animation_helpers.h"
+#include "gestures/gestures.h"
 #include "constants/constants.h"
 #include "state/state_store.h"
 
@@ -42,6 +43,7 @@ void ui_init(void)
         }
         int player_mode = player_store.getInt(KEY_PLAYER_MODE, 0);
         // Now show the life counter (arc, label, animation)
+        life_counter_mode = player_mode;
         if (player_mode == 1) {
           init_life_counter();
         } else {
