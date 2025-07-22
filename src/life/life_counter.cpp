@@ -18,6 +18,7 @@ typedef struct
 // --- Life Counter GUI State ---
 static lv_obj_t *life_arc = nullptr;
 static lv_obj_t *life_label = nullptr;
+static lv_obj_t *grouped_change_label = nullptr;
 int life_total = 0;
 static int max_life = LIFE_STD_START;
 
@@ -34,9 +35,14 @@ void decrement_life(int value);
 void reset_life();
 void queue_life_change(int player, int value);
 
+// Static flag to track initialization state
+static bool is_initializing = false;
+
 // Call this after boot animation to show the life counter
 void init_life_counter()
 {
+  is_initializing = true; // Set flag to indicate initialization is active
+
   // Clean up previous objects if switching modes
   if (life_arc)
   {
@@ -48,9 +54,13 @@ void init_life_counter()
     lv_obj_del(life_label);
     life_label = nullptr;
   }
+  if (grouped_change_label)
+  {
+    lv_obj_del(grouped_change_label);
+    grouped_change_label = nullptr;
+  }
 
   max_life = player_store.getLife(LIFE_STD_START);
-  int stored_life = max_life;
   // Only create arc and label if they do not exist
   if (!life_arc)
   {
@@ -79,6 +89,14 @@ void init_life_counter()
     lv_obj_set_style_text_color(life_label, lv_color_white(), 0);
     lv_obj_align(life_label, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_text_opa(life_label, LV_OPA_TRANSP, 0); // Start transparent
+
+    // Create grouped change label above life_label
+    grouped_change_label = lv_label_create(lv_scr_act());
+    lv_obj_add_flag(grouped_change_label, LV_OBJ_FLAG_HIDDEN);
+    lv_label_set_text(grouped_change_label, "0");
+    lv_obj_set_style_text_font(grouped_change_label, &lv_font_montserrat_32, 0);
+    lv_obj_set_style_text_color(grouped_change_label, lv_color_white(), 0);
+    lv_obj_align_to(grouped_change_label, life_label, LV_ALIGN_OUT_TOP_MID, 0, -10);
   }
 
   // Show arc and animate sweep while fading in the life label in parallel
@@ -86,14 +104,13 @@ void init_life_counter()
   {
     printf("[show_life_counter] Showing arc\n");
     lv_obj_clear_flag(life_arc, LV_OBJ_FLAG_HIDDEN);
-    update_life_label(stored_life); // Ensure arc and label match store
     lv_obj_set_style_arc_opa(life_arc, LV_OPA_COVER, LV_PART_INDICATOR);
     lv_anim_t anim;
     lv_anim_init(&anim);
     lv_anim_set_var(&anim, NULL);
     lv_anim_set_exec_cb(&anim, arc_sweep_anim_cb);
     // Use persisted life value or default
-    lv_anim_set_values(&anim, 0, stored_life);
+    lv_anim_set_values(&anim, 0, max_life);
     lv_anim_set_time(&anim, 2000);
     lv_anim_set_delay(&anim, 0);
     lv_anim_set_ready_cb(&anim, arc_sweep_anim_ready_cb);
@@ -130,6 +147,7 @@ void decrement_life(int value)
 void reset_life()
 {
   int start_life = player_store.getLife(LIFE_STD_START);
+  life_total += start_life - life_total;
   update_life_label(start_life);
 }
 
@@ -158,14 +176,16 @@ static void life_fadein_ready_cb(lv_anim_t *a)
 static void arc_sweep_anim_cb(void *var, int32_t v)
 {
   // Always use the persisted max value for arc calculations
-  if (v > max_life)
-    v = max_life;
-  printf("[arc_sweep_anim_cb] v=%d (max=%d)\n", v, max_life);
-  update_life_label(v);
+  if (life_total <= max_life)
+    printf("[arc_sweep_anim_cb] v=%d (max=%d)\n", v, max_life);
+  update_life_label(v - life_total); // Use the animation value to update the label
 }
 
 // Animation ready callback (optional, can be NULL)
-static void arc_sweep_anim_ready_cb(lv_anim_t *a) {}
+static void arc_sweep_anim_ready_cb(lv_anim_t *a)
+{
+  is_initializing = false;
+}
 
 // Function to convert life total to arc segment
 static arc_segment_t life_to_arc(int life_total)
@@ -246,10 +266,10 @@ static arc_segment_t life_to_arc(int life_total)
 }
 
 // Update the life label and arc based on the current life total
-void update_life_label(int value)
+void update_life_label(int grouped_change)
 {
   static int last_life_total = 0;
-  life_total = value;
+  life_total = life_total + grouped_change;
   if (life_label)
   {
     char buf[8];
@@ -317,8 +337,31 @@ void life_counter_loop()
 // Wrap life change for 2P
 void queue_life_change(int player, int value)
 {
+  if (grouped_change_label && !is_initializing)
+  {
+    int pending_change = event_grouper.getPendingChange() + value;
+    char buf[8];
+    snprintf(buf, sizeof(buf), "%d", pending_change);
+    lv_obj_set_style_text_color(grouped_change_label, pending_change >= 0 ? GREEN_COLOR : RED_COLOR, 0);
+    lv_label_set_text(grouped_change_label, buf);
+
+    // Ensure the label is visible immediately
+    lv_obj_clear_flag(grouped_change_label, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_style_text_opa(grouped_change_label, LV_OPA_COVER, 0);
+
+    // Trigger fade-in animation immediately
+    fade_in_obj(grouped_change_label, 500, 0, [](lv_anim_t *anim)
+                {
+      // After fade-in, start fade-out after 500ms
+      fade_out_obj((lv_obj_t *)anim->var, 500, 500, [](lv_anim_t *fade_out_anim) {
+        // Hide the label after fade-out
+        if (fade_out_anim && fade_out_anim->var) {
+          lv_obj_add_flag((lv_obj_t *)fade_out_anim->var, LV_OBJ_FLAG_HIDDEN);
+        }
+      }); });
+  }
   event_grouper.handleChange(player, value, [](const LifeHistoryEvent &evt)
-                             {
-    life_total += evt.net_life_change;
-    update_life_label(life_total); });
+                             { 
+                                // Update grouped change label
+  update_life_label(evt.net_life_change); });
 }
