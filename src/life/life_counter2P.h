@@ -7,5 +7,6 @@
 #define ARC_WIDTH_2P 16 // Slightly thinner for 2P mode
 
 void init_life_counter_2P();
-void reset_life();
+void reset_life_p1();
+void reset_life_p2();
 void life_counter2p_loop();

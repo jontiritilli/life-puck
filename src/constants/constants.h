@@ -28,6 +28,7 @@ enum ContextualQuadrant
 #define GREEN_COLOR lv_color_hex(0x00e31f)
 #define YELLOW_COLOR lv_color_hex(0xebf700)
 #define RED_COLOR lv_color_hex(0xe80000)
+#define WHITE_COLOR lv_color_hex(0xffffff)
 
 // Constants for StateStore
 #define PLAYER_STORE "player_store"

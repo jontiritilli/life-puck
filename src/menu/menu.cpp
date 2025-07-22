@@ -8,6 +8,7 @@
 #include <battery/battery_state.h>
 #include <settings/settings_overlay.h>
 #include <life/life_counter.h>
+#include <life/life_counter2P.h>
 #include <helpers/tap_layer.h>
 #include <state/state_store.h>
 
@@ -55,13 +56,22 @@ static void togglePlayerMode()
   printf("[togglePlayerMode] Player mode toggled to %d\n", player_store.getInt(KEY_PLAYER_MODE, 0));
   // Rerender main GUI (life counter)
   ui_init();
-  // Rerender contextual menu
-  renderMenu(MENU_CONTEXTUAL);
+  renderMenu(MENU_NONE);
 }
 
 static void resetActiveCounter()
 {
-  reset_life();
+  int player_mode = player_store.getInt(KEY_PLAYER_MODE, 0);
+  if (player_mode == 1)
+  {
+    reset_life();
+  }
+  else if (player_mode == 2)
+  {
+    reset_life_p1();
+    reset_life_p2();
+  }
+  printf("[resetActiveCounter] Reset life counter for player mode %d\n", player_mode);
   clearMenus();
 }
 
@@ -101,10 +111,10 @@ void drawContextualMenuOverlay()
 {
   clearMenus();
   // Make the overlay a true circle, centered on the screen
-  int circle_diameter = (SCREEN_WIDTH < SCREEN_HEIGHT ? SCREEN_WIDTH : SCREEN_HEIGHT);
+  int circle_diameter = (SCREEN_WIDTH < SCREEN_HEIGHT ? SCREEN_WIDTH : SCREEN_HEIGHT) + 5; // Increase size by 5 pixels
   int circle_radius = circle_diameter / 2;
-  int circle_x = (SCREEN_WIDTH - circle_diameter) / 2;
-  int circle_y = (SCREEN_HEIGHT - circle_diameter) / 2;
+  int circle_x = (SCREEN_WIDTH - circle_diameter) / 2;  // Center the circle horizontally
+  int circle_y = (SCREEN_HEIGHT - circle_diameter) / 2; // Center the circle vertically
   contextual_menu = lv_obj_create(lv_scr_act());
   lv_obj_set_size(contextual_menu, circle_diameter, circle_diameter);
   lv_obj_set_style_bg_color(contextual_menu, lv_color_black(), LV_PART_MAIN);
@@ -114,6 +124,7 @@ void drawContextualMenuOverlay()
   lv_obj_set_style_radius(contextual_menu, LV_RADIUS_CIRCLE, LV_PART_MAIN);
   lv_obj_clear_flag(contextual_menu, LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_align(contextual_menu, LV_ALIGN_CENTER, 0, 0);
+  lv_obj_clear_flag(contextual_menu, LV_OBJ_FLAG_SCROLLABLE);
 
   // Use a slightly smaller ring for the menu ring inside the overlay circle
   int ring_diameter = circle_diameter;

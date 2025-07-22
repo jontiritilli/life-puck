@@ -350,7 +350,7 @@ void queue_life_change(int player, int value)
     lv_obj_set_style_text_opa(grouped_change_label, LV_OPA_COVER, 0);
 
     // Trigger fade-in animation immediately
-    fade_in_obj(grouped_change_label, 500, 0, [](lv_anim_t *anim)
+    fade_in_obj(grouped_change_label, 100, 0, [](lv_anim_t *anim)
                 {
       // After fade-in, start fade-out after 500ms
       fade_out_obj((lv_obj_t *)anim->var, 500, 500, [](lv_anim_t *fade_out_anim) {
