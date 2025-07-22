@@ -146,9 +146,9 @@ void decrement_life(int value)
 // Reset life total to 0 and update label
 void reset_life()
 {
-  int start_life = player_store.getLife(LIFE_STD_START);
-  life_total += start_life - life_total;
-  update_life_label(start_life);
+  int start_life_conf = player_store.getLife(LIFE_STD_START);
+  int life_offset = start_life_conf - life_total;
+  update_life_label(life_offset);
 }
 
 // Animation callback for arc
