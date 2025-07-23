@@ -20,7 +20,8 @@ enum ContextualQuadrant
   QUADRANT_TL = 0,
   QUADRANT_TR = 1,
   QUADRANT_BL = 2,
-  QUADRANT_BR = 3
+  QUADRANT_BR = 3,
+  QUADRANT_EXIT = 4
 };
 
 // Color Constants (RGB format)
@@ -28,6 +29,10 @@ enum ContextualQuadrant
 #define GREEN_COLOR lv_color_hex(0x00e31f)
 #define YELLOW_COLOR lv_color_hex(0xebf700)
 #define RED_COLOR lv_color_hex(0xe80000)
+#define WHITE_COLOR lv_color_hex(0xffffff)
+#define BLACK_COLOR lv_color_hex(0x000000)
+#define GRAY_COLOR lv_color_hex(0x808080)
+#define DARK_GRAY_COLOR lv_color_hex(0x404040)
 
 // Constants for StateStore
 #define PLAYER_STORE "player_store"

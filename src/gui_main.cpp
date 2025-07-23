@@ -7,9 +7,10 @@
 #include "life/life_counter2P.h"
 #include "menu/menu.h"
 #include "gui_main.h"
-#include "gestures/gestures.h"
+#include "main.h"
 #include "touch/touch.h"
 #include "helpers/animation_helpers.h"
+#include "gestures/gestures.h"
 #include "constants/constants.h"
 #include "state/state_store.h"
 
@@ -23,8 +24,8 @@ void ui_init(void)
   lv_obj_set_style_bg_opa(lv_scr_act(), LV_OPA_COVER, LV_PART_MAIN);
   // Create "Life Puck" label (title)
   lv_obj_t *title_label = lv_label_create(lv_scr_act());
-  lv_label_set_text(title_label, "Life Puck");
-  lv_obj_set_style_text_font(title_label, &lv_font_montserrat_48, 0);
+  lv_label_set_text(title_label, "_Life Puck");
+  lv_obj_set_style_text_font(title_label, &lv_font_montserrat_64, 0);
   lv_obj_set_style_text_color(title_label, lv_color_white(), 0);
   lv_obj_set_style_text_opa(title_label, LV_OPA_TRANSP, 0);
   lv_obj_align(title_label, LV_ALIGN_CENTER, 0, SCREEN_HEIGHT / 9);
@@ -42,14 +43,14 @@ void ui_init(void)
         }
         int player_mode = player_store.getInt(KEY_PLAYER_MODE, 0);
         // Now show the life counter (arc, label, animation)
+        life_counter_mode = player_mode;
         if (player_mode == 1) {
           init_life_counter();
         } else {
           init_life_counter_2P();
         }
+        register_gesture_callback(GestureType::LongPressMenu, []()
+                                  { renderMenu(MENU_CONTEXTUAL); });
       });
     } });
-
-  register_gesture_callback(GestureType::LongPressMenu, []()
-                            { renderMenu(MENU_CONTEXTUAL); });
 }

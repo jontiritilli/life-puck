@@ -7,6 +7,10 @@
 #include "power_key/power_key.h"
 #include "constants/constants.h"
 #include "battery/battery_state.h"
+#include <life/life_counter.h>
+#include <life/life_counter2P.h>
+#include <helpers/event_grouper.h>
+#include "main.h"
 
 using namespace esp_panel::drivers;
 using namespace esp_panel::board;
@@ -21,7 +25,7 @@ static const BaseType_t app_cpu = 1;
 esp_panel::board::Board *board = new esp_panel::board::Board();
 
 // Function to create a FreeRTOS task
-BaseType_t create_task(TaskFunction_t task_function, const char *task_name, uint32_t stack_size, void *param, UBaseType_t priority, TaskHandle_t *task_handle = NULL);
+BaseType_t create_task(TaskFunction_t task_function, const char *task_name, uint32_t stack_size, void *param, UBaseType_t priority, TaskHandle_t *task_handle);
 
 /* LVGL draw into this buffer, 1/10 screen size usually works well. The size is in bytes */
 #define BUFFER_SIZE (SCREEN_HEIGHT * SCREEN_WIDTH * sizeof(uint16_t) / 10)
@@ -31,6 +35,9 @@ void flush_cb(lv_display_t *display, const lv_area_t *area, uint8_t *px_map);
 
 /* Forward declaration for gui_task */
 void gui_task(void *pvParameters);
+
+// Global mode variable (should be updated by UI logic)
+int life_counter_mode = 1;
 
 void setup()
 {
@@ -51,7 +58,7 @@ void setup()
   Serial.println("[setup] Initializing board");
   board->init();
   assert(board->begin());
-  // power_init();
+  power_init();
   Serial.println("[setup] Initializing battery");
   battery_init();
   Serial.println("[setup] Creating GUI task");
@@ -61,7 +68,15 @@ void setup()
 void loop()
 {
   vTaskDelay(10 / portTICK_PERIOD_MS);
-  // power_loop();
+  power_loop();
+  if (life_counter_mode == 1)
+  {
+    life_counter_loop();
+  }
+  else if (life_counter_mode == 2)
+  {
+    life_counter2p_loop();
+  }
 }
 
 BaseType_t create_task(TaskFunction_t task_function, const char *task_name, uint32_t stack_size, void *param, UBaseType_t priority, TaskHandle_t *task_handle)
