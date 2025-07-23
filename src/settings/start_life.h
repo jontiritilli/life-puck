@@ -5,7 +5,7 @@ extern "C"
 {
 #endif
 
-  void drawStartLifeScreen();
+  void renderStartLifeScreen();
 
 #ifdef __cplusplus
 }

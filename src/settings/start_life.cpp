@@ -46,11 +46,12 @@ static void save_btn_event_cb(lv_event_t *e)
   renderMenu(MENU_SETTINGS);
 }
 
-void drawStartLifeScreen()
+void renderStartLifeScreen()
 {
   extern lv_obj_t *settings_start_life_menu;
   settings_start_life_menu = lv_obj_create(lv_scr_act());
   lv_obj_set_size(settings_start_life_menu, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_style_bg_color(settings_start_life_menu, BLACK_COLOR, LV_PART_MAIN); // dark background
   lv_obj_add_event_cb(settings_start_life_menu, back_gesture_event_cb, LV_EVENT_GESTURE, NULL);
 
   // Define grid: 5 rows, 1 column
