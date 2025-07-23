@@ -1,6 +1,6 @@
 #pragma once
 extern "C"
 {
-  void drawSettingsOverlay();
+  void renderSettingsOverlay();
   void showStartLifeScreen();
 }

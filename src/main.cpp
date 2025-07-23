@@ -58,7 +58,7 @@ void setup()
   Serial.println("[setup] Initializing board");
   board->init();
   assert(board->begin());
-  // power_init();
+  power_init();
   Serial.println("[setup] Initializing battery");
   battery_init();
   Serial.println("[setup] Creating GUI task");
@@ -68,7 +68,7 @@ void setup()
 void loop()
 {
   vTaskDelay(10 / portTICK_PERIOD_MS);
-  // power_loop();
+  power_loop();
   if (life_counter_mode == 1)
   {
     life_counter_loop();

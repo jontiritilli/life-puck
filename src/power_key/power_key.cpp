@@ -38,12 +38,26 @@ void toggle_screen(void)
   printf("[toggle_screen] is_screen_on=%d\n", is_screen_on);
 }
 
+// Enhanced wake-up: latch power as soon as button is pressed
 void wake_up(void)
 {
-  pinMode(PWR_Control_PIN, OUTPUT);
-  digitalWrite(PWR_Control_PIN, HIGH);
-  delay(5); // Give FET/IC time to latch
-  pinMode(PWR_KEY_Input_PIN, INPUT);
+  // Latch power ON immediately if button is pressed
+  if (is_button_pressed())
+  {
+    digitalWrite(PWR_Control_PIN, HIGH);
+    delay(5); // Give FET/IC time to latch
+    // Wait for button release to avoid bouncing
+    while (is_button_pressed())
+    {
+      vTaskDelay(10);
+    }
+  }
+  else
+  {
+    // If not pressed, just ensure power is ON
+    digitalWrite(PWR_Control_PIN, HIGH);
+    delay(5);
+  }
   printf("[wake_up] Waking up device\n");
   esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
   printf("[wake_up] Wakeup reason: %d\n", wakeup_reason);
@@ -89,19 +103,11 @@ bool wait_for_button_hold(uint16_t hold_ms)
 void power_loop(void)
 {
   uint8_t button_state = is_button_pressed();
-  static uint32_t last_toggle_time = 0;
-  static uint32_t button_press_start = 0;
-  const uint32_t debounce_ms = 100; // 100ms debounce
-  uint32_t now = millis();
+  static uint8_t last_button_state = ButtonState::BUTTON_NOT_PRESSED;
 
-  if (button_state)
+  if (button_state && !last_button_state)
   {
-    if (!prev_button_state)
-    {
-      // Button was just pressed
-      button_press_start = now;
-    }
-    // Wake up on short hold, sleep on long hold
+    // Button just pressed, check hold durations
     if (wait_for_button_hold(Device_Sleep_Time))
     {
       printf("[power_loop] Button held for sleep, going to sleep\n");
@@ -112,24 +118,19 @@ void power_loop(void)
       printf("[power_loop] Button held for wake, waking up\n");
       wake_up();
     }
-  }
-  else
-  {
-    if (prev_button_state)
+    else
     {
-      if (!wait_for_button_hold(Device_Sleep_Time))
-      {
-        printf("[power_loop] Toggling screen\n");
-        toggle_screen();
-        last_toggle_time = now;
-      }
-      button_press_start = 0;
+      // Short press, toggle screen
+      printf("[power_loop] Short press, toggling screen\n");
+      toggle_screen();
     }
   }
-  prev_button_state = button_state;
+  last_button_state = button_state;
 }
 
 void power_init(void)
 {
+  pinMode(PWR_KEY_Input_PIN, INPUT); // Ensure IO 6 is set as GPIO at the top
+  pinMode(PWR_Control_PIN, OUTPUT);
   wake_up();
 }

@@ -27,17 +27,18 @@ static void btn_life_event_cb(lv_event_t *e)
 }
 
 // Draw settings overlay using LVGL
-void drawSettingsOverlay()
+void renderSettingsOverlay()
 {
   extern lv_obj_t *settings_menu;
   settings_menu = lv_obj_create(lv_scr_act());
   lv_obj_set_size(settings_menu, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_style_bg_color(settings_menu, lv_color_make(32, 32, 32), LV_PART_MAIN); // dark background
+  lv_obj_set_style_bg_color(settings_menu, BLACK_COLOR, LV_PART_MAIN); // dark background
   lv_obj_set_style_bg_opa(settings_menu, LV_OPA_COVER, LV_PART_MAIN);
   lv_obj_set_style_border_opa(settings_menu, LV_OPA_TRANSP, LV_PART_MAIN);
   lv_obj_set_style_outline_opa(settings_menu, LV_OPA_TRANSP, LV_PART_MAIN);
   lv_obj_set_style_radius(settings_menu, LV_RADIUS_CIRCLE, LV_PART_MAIN);
   lv_obj_set_style_pad_all(settings_menu, 16, LV_PART_MAIN);
+
   // Define grid: 9 rows, 1 column
   // Center the layout by using a single column and adjusting alignment
   static lv_coord_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};

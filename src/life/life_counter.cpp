@@ -19,10 +19,9 @@ typedef struct
 static lv_obj_t *life_arc = nullptr;
 static lv_obj_t *life_label = nullptr;
 static lv_obj_t *grouped_change_label = nullptr;
-int life_total = 0;
-static int max_life = LIFE_STD_START;
+static int max_life = player_store.getLife(LIFE_STD_START);
 
-EventGrouper event_grouper(1000);
+EventGrouper event_grouper(1000, player_store.getLife(LIFE_STD_START));
 
 // --- Forward Declarations ---
 void update_life_label(int value);
@@ -60,7 +59,6 @@ void init_life_counter()
     grouped_change_label = nullptr;
   }
 
-  max_life = player_store.getLife(LIFE_STD_START);
   // Only create arc and label if they do not exist
   if (!life_arc)
   {
@@ -147,8 +145,7 @@ void decrement_life(int value)
 void reset_life()
 {
   int start_life_conf = player_store.getLife(LIFE_STD_START);
-  int life_offset = start_life_conf - life_total;
-  update_life_label(life_offset);
+  update_life_label(start_life_conf);
 }
 
 // Animation callback for arc
@@ -176,9 +173,9 @@ static void life_fadein_ready_cb(lv_anim_t *a)
 static void arc_sweep_anim_cb(void *var, int32_t v)
 {
   // Always use the persisted max value for arc calculations
-  if (life_total <= max_life)
-    printf("[arc_sweep_anim_cb] v=%d (max=%d)\n", v, max_life);
-  update_life_label(v - life_total); // Use the animation value to update the label
+  if (v <= max_life)
+    v = max_life;       // Ensure v does not exceed max_life
+  update_life_label(v); // Use the animation value to update the label
 }
 
 // Animation ready callback (optional, can be NULL)
@@ -266,36 +263,24 @@ static arc_segment_t life_to_arc(int life_total)
 }
 
 // Update the life label and arc based on the current life total
-void update_life_label(int grouped_change)
+void update_life_label(int new_life_total)
 {
-  static int last_life_total = 0;
-  life_total = life_total + grouped_change;
   if (life_label)
   {
     char buf[8];
-    snprintf(buf, sizeof(buf), "%d", life_total);
-    // Only update text if it changed
-    if (life_total != last_life_total || strcmp(lv_label_get_text(life_label), buf) != 0)
-    {
-      lv_label_set_text(life_label, buf);
-      last_life_total = life_total;
-    }
+    snprintf(buf, sizeof(buf), "%d", new_life_total);
+    lv_label_set_text(life_label, buf);
   }
-
-  // Update arc to reflect life total
   if (life_arc)
   {
-    arc_segment_t seg = life_to_arc(life_total);
+    arc_segment_t seg = life_to_arc(new_life_total);
     uint16_t c16 = lv_color_to_u16(seg.color);
     uint8_t r = (c16 >> 11) & 0x1F;
     uint8_t g = (c16 >> 5) & 0x3F;
     uint8_t b = c16 & 0x1F;
-    // Scale to 8-bit for debug
     r = (r << 3) | (r >> 2);
     g = (g << 2) | (g >> 4);
     b = (b << 3) | (b >> 2);
-    printf("[update_life_label] life_total=%d, arc: start=%d end=%d color=(%d,%d,%d)\n",
-           life_total, seg.start_angle, seg.end_angle, r, g, b);
     lv_arc_set_angles(life_arc, seg.start_angle, seg.end_angle);
     lv_obj_set_style_arc_color(life_arc, seg.color, LV_PART_INDICATOR);
   }
@@ -341,27 +326,30 @@ void queue_life_change(int player, int value)
   {
     int pending_change = event_grouper.getPendingChange() + value;
     char buf[8];
-    snprintf(buf, sizeof(buf), "%d", pending_change);
+    if (pending_change > 0)
+    {
+      snprintf(buf, sizeof(buf), "+%d", pending_change);
+    }
+    else
+    {
+      snprintf(buf, sizeof(buf), "%d", pending_change);
+    }
     lv_obj_set_style_text_color(grouped_change_label, pending_change >= 0 ? GREEN_COLOR : RED_COLOR, 0);
     lv_label_set_text(grouped_change_label, buf);
 
     // Ensure the label is visible immediately
     lv_obj_clear_flag(grouped_change_label, LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_style_text_opa(grouped_change_label, LV_OPA_COVER, 0);
-
-    // Trigger fade-in animation immediately
-    fade_in_obj(grouped_change_label, 100, 0, [](lv_anim_t *anim)
-                {
-      // After fade-in, start fade-out after 500ms
-      fade_out_obj((lv_obj_t *)anim->var, 500, 500, [](lv_anim_t *fade_out_anim) {
+    fade_out_obj(grouped_change_label, 100, 1000, [](lv_anim_t *fade_out_anim)
+                 {
         // Hide the label after fade-out
         if (fade_out_anim && fade_out_anim->var) {
           lv_obj_add_flag((lv_obj_t *)fade_out_anim->var, LV_OBJ_FLAG_HIDDEN);
-        }
-      }); });
+        } });
   }
   event_grouper.handleChange(player, value, [](const LifeHistoryEvent &evt)
-                             { 
-                                // Update grouped change label
-  update_life_label(evt.net_life_change); });
+                             {
+                              printf("[queue_life_change] Player %d life change committed: %d\n", evt.player_id, evt.life_total);
+                              // After commit, update UI from state
+                              update_life_label(evt.life_total); });
 }
