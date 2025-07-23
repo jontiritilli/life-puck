@@ -18,7 +18,7 @@ See the wiki for hardware specs, pin mapping, and more.
 
 ## Hardware Features
 
-- 1.85" 240x280 IPS LCD (Waveshare ESP32-S3-Touch-LCD-1.85)
+- 1.85" 360x360 IPS LCD (Waveshare ESP32-S3-Touch-LCD-1.85)
 - Capacitive touch panel (CST816S)
 - I2C IO expander support
 
