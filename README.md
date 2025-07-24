@@ -2,15 +2,15 @@
 
 LifePuck is a digital life counter and utility for tabletop games, designed for the [Waveshare ESP32-S3-Touch-LCD-1.85](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.85) board (or compatible custom hardware). It features a 1.85" IPS LCD, capacitive touch, and I2C IO expander, built with PlatformIO and LVGL.
 
-## Hardware Reference
-
+## Hardware 
+- [Waveshare Amazon link](https://a.co/d/g4B9fnk)
 - [Waveshare ESP32-S3-Touch-LCD-1.85 Wiki](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.85)
   - [Hardware Overview](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.85#Hardware_Overview)
   - [Pinout](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.85#Pinout)
   - [Schematic](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.85#Schematic)
   - [Resources](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.85#Resources)
-- [Battery](https://a.co/d/2o6Rkg9)
-- [3d Printed case](https://makerworld.com/models/1635526)
+- [Battery Amazon Link](https://a.co/d/2o6Rkg9)
+- [3d Printed Case](https://makerworld.com/models/1635526)
 
 See the wiki for hardware specs, pin mapping, and more.
 
@@ -22,7 +22,6 @@ See the wiki for hardware specs, pin mapping, and more.
 
 - 1.85" 360x360 IPS LCD (Waveshare ESP32-S3-Touch-LCD-1.85)
 - Capacitive touch panel (CST816S)
-- I2C IO expander support
 
 ## 3D Printed Case
 
