@@ -50,7 +50,7 @@ void setup()
   Serial.println("[setup] Initializing board");
   board->init();
   assert(board->begin());
-  board->getBacklight()->setBrightness(player_store.getInt(KEY_BRIGHTNESS, 100));
+  board->getBacklight()->off();
   power_init();
   battery_init();
   create_task(gui_task, "gui_task", 16384, NULL, 1, NULL);
@@ -87,7 +87,6 @@ void gui_task(void *pvParameters)
 {
   Serial.println("Initializing LVGL");
   lv_init();
-
   lv_tick_set_cb(xTaskGetTickCount);
 
   // Step 1: Create display object (LVGL 9.3)
@@ -113,7 +112,15 @@ void gui_task(void *pvParameters)
 
   ui_init();
   init_touch();
+  // Force LVGL to draw at least one frame
+  lv_timer_handler();
+  vTaskDelay(50 / portTICK_PERIOD_MS); // Give hardware time to update
 
+  // Force another flush to ensure the frame is valid
+  lv_timer_handler();
+  vTaskDelay(10 / portTICK_PERIOD_MS);
+  board->getBacklight()->on();
+  board->getBacklight()->setBrightness(player_store.getInt(KEY_BRIGHTNESS, 100));
   // Step 4: Main GUI loop (LVGL 9.3)
   while (1)
   {

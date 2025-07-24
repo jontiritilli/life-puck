@@ -51,8 +51,6 @@ void wake_up(void)
     printf("[wake_up] Waking up device\n");
     esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
     printf("[wake_up] Wakeup reason: %d\n", wakeup_reason);
-    board->getBacklight()->on();
-    board->getBacklight()->setBrightness(player_store.getInt(KEY_BRIGHTNESS, 100));
     vTaskDelay(300);
   }
 }
