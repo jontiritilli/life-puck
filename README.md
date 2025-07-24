@@ -9,6 +9,8 @@ LifePuck is a digital life counter and utility for tabletop games, designed for 
   - [Pinout](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.85#Pinout)
   - [Schematic](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.85#Schematic)
   - [Resources](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.85#Resources)
+- [Battery](https://a.co/d/2o6Rkg9)
+- [3d Printed case](https://makerworld.com/models/1635526)
 
 See the wiki for hardware specs, pin mapping, and more.
 
