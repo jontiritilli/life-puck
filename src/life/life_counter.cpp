@@ -11,10 +11,14 @@
 #include "constants/constants.h"
 
 // --- Life Counter GUI State ---
-lv_obj_t *life_arc = nullptr; // Now global for menu access
+lv_obj_t *amp_button = nullptr;
+lv_obj_t *life_arc = nullptr; // Global for menu access
 static lv_obj_t *life_label = nullptr;
 static lv_obj_t *grouped_change_label = nullptr;
+static lv_obj_t *lbl_amp_label = nullptr;
 static int max_life = player_store.getLife(LIFE_STD_START);
+static int amp_mode = player_store.getInt(AMP_MODE, 0);
+static int amp_value = 0;
 
 EventGrouper event_grouper(1000, max_life, 0); // Single player mode
 
@@ -28,6 +32,8 @@ void increment_life(int value);
 void decrement_life(int value);
 void reset_life();
 void queue_life_change(int player, int value);
+void increment_amp();
+void clear_amp();
 
 // Static flag to track initialization state
 static bool is_initializing = false;
@@ -52,6 +58,11 @@ void init_life_counter()
   {
     lv_obj_del(grouped_change_label);
     grouped_change_label = nullptr;
+  }
+  if (amp_button)
+  {
+    lv_obj_del(amp_button);
+    amp_button = nullptr;
   }
 
   // Only create arc and label if they do not exist
@@ -91,6 +102,40 @@ void init_life_counter()
     lv_obj_set_style_text_color(grouped_change_label, lv_color_white(), 0);
     lv_obj_align_to(grouped_change_label, life_label, LV_ALIGN_OUT_TOP_MID, 0, -10);
   }
+  // Create amp button if not already created
+  if (!amp_button)
+  {
+    amp_button = lv_btn_create(lv_scr_act());
+    lv_obj_set_size(amp_button, 100, 100);
+    lv_obj_set_style_radius(amp_button, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+    lv_obj_set_style_bg_color(amp_button, YELLOW_COLOR, 0);
+    static bool amp_long_press = false;
+    lv_obj_add_event_cb(amp_button, [](lv_event_t *e)
+                        { amp_long_press = false; }, LV_EVENT_PRESSED, NULL);
+    lv_obj_add_event_cb(amp_button, [](lv_event_t *e)
+                        {
+        amp_long_press = true;
+        clear_amp(); }, LV_EVENT_LONG_PRESSED, NULL);
+    lv_obj_add_event_cb(amp_button, [](lv_event_t *e)
+                        {
+        if (!amp_long_press) increment_amp(); }, LV_EVENT_CLICKED, NULL);
+    lbl_amp_label = lv_label_create(amp_button);
+    char buf[8];
+    snprintf(buf, sizeof(buf), "%d", amp_value);
+    lv_label_set_text(lbl_amp_label, buf);
+    lv_obj_set_style_text_color(lbl_amp_label, BLACK_COLOR, 0);
+    lv_obj_set_style_text_font(lbl_amp_label, &lv_font_montserrat_32, 0);
+    lv_obj_center(lbl_amp_label);
+    lv_obj_align_to(amp_button, life_label, LV_ALIGN_RIGHT_MID, 135, 0);
+    if (amp_mode)
+    {
+      lv_obj_clear_flag(amp_button, LV_OBJ_FLAG_HIDDEN);
+    }
+    else
+    {
+      lv_obj_add_flag(amp_button, LV_OBJ_FLAG_HIDDEN);
+    }
+  }
 
   // Show arc and animate sweep while fading in the life label in parallel
   if (life_arc)
@@ -114,6 +159,28 @@ void init_life_counter()
   fade_in_obj(life_label, 1000, 0, NULL); // Register gesture callbacks for tap and swipe
 }
 
+void increment_amp()
+{
+  amp_value += 1;
+  char buf[8];
+  snprintf(buf, sizeof(buf), "+%d", amp_value);
+  if (amp_button && lbl_amp_label)
+  {
+    printf("[increment_amp] Current amp value: %d\n", amp_value);
+    lv_label_set_text(lbl_amp_label, buf);
+  }
+}
+void clear_amp()
+{
+  amp_value = 0; // Reset amp value
+  char buf[8];
+  snprintf(buf, sizeof(buf), "%d", amp_value);
+  if (amp_button && lbl_amp_label)
+  {
+    lv_label_set_text(lbl_amp_label, buf);
+  }
+}
+
 // Increment life total and update label
 void increment_life(int value)
 {
@@ -129,7 +196,6 @@ void decrement_life(int value)
 // Reset life total to 0 and update label
 void reset_life()
 {
-
   event_grouper.resetHistory(max_life);
   update_life_label(max_life);
 }

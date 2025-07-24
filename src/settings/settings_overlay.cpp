@@ -72,7 +72,7 @@ void renderSettingsOverlay()
   lv_obj_set_size(btn_amp_toggle, 180, 40);
   lv_obj_set_grid_cell(btn_amp_toggle, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 3, 1);
   lv_obj_t *lbl_amp_label = lv_label_create(btn_amp_toggle);
-  lv_label_set_text(lbl_amp_label, (amp_mode ? "Amp Off" : "Amp On")); // shows current state
+  lv_label_set_text(lbl_amp_label, (amp_mode ? "Amp On" : "Amp Off")); // shows current state
   lv_obj_set_style_text_font(lbl_amp_label, &lv_font_montserrat_20, 0);
   lv_obj_center(lbl_amp_label);
   // Store the label pointer as user data for the callback
@@ -83,7 +83,17 @@ void renderSettingsOverlay()
     int current = player_store.getInt(AMP_MODE, 0);
     int new_mode = !current;
     player_store.putInt(AMP_MODE, new_mode);
-    lv_label_set_text(label, (new_mode ? "Amp OFF" : "Amp ON")); }, LV_EVENT_CLICKED, NULL);
+    lv_label_set_text(label, (new_mode ? "Amp On" : "Amp Off"));
+    extern lv_obj_t *amp_button;
+    if (amp_button && !new_mode)
+    {
+      // hide the amp button if it exists
+      lv_obj_add_flag(amp_button, LV_OBJ_FLAG_HIDDEN);
+    } else if (amp_button && new_mode)
+    {
+      // show the amp button if it exists
+      lv_obj_clear_flag(amp_button, LV_OBJ_FLAG_HIDDEN);
+    } }, LV_EVENT_CLICKED, NULL);
 
   // Battery
   lv_obj_t *lbl_batt = lv_label_create(settings_menu);
