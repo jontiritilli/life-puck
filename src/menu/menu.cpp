@@ -86,6 +86,8 @@ static void resetActiveCounter()
     reset_life_p2();
   }
   printf("[resetActiveCounter] Reset life counter and history for player mode %d\n", player_mode);
+
+  showLifeScreen();
   clearMenus();
 }
 
