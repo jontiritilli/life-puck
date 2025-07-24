@@ -22,6 +22,10 @@ See the wiki for hardware specs, pin mapping, and more.
 - Capacitive touch panel (CST816S)
 - I2C IO expander support
 
+## 3D Printed Case
+
+The case was built by someone else, but you can find the design files here: [Game Puck Case](https://makerworld.com/en/models/1635526-game-puck#profileId-1727766)
+
 ## Software Features
 
 - One and two player life counter modes

@@ -9,7 +9,22 @@
 void renderHistoryOverlay()
 {
   int player_mode = player_store.getInt(KEY_PLAYER_MODE, 0);
-  std::vector<LifeHistoryEvent> history = (player_mode == 1) ? event_grouper.getHistory() : event_grouper_p2.getHistory();
+  std::vector<LifeHistoryEvent> history;
+  if (player_mode == 1)
+  {
+    history = event_grouper.getHistory();
+  }
+  else
+  {
+    // 2P mode: merge and sort both groupers
+    std::vector<LifeHistoryEvent> h1 = event_grouper_p1.getHistory();
+    std::vector<LifeHistoryEvent> h2 = event_grouper_p2.getHistory();
+    history.reserve(h1.size() + h2.size());
+    history.insert(history.end(), h1.begin(), h1.end());
+    history.insert(history.end(), h2.begin(), h2.end());
+    std::sort(history.begin(), history.end(), [](const LifeHistoryEvent &a, const LifeHistoryEvent &b)
+              { return a.timestamp < b.timestamp; });
+  }
 
   extern lv_obj_t *history_menu;
   history_menu = lv_obj_create(lv_scr_act());
@@ -27,7 +42,7 @@ void renderHistoryOverlay()
   lv_obj_set_size(btn_back, 80, 40);
   lv_obj_set_style_bg_color(btn_back, lv_color_white(), LV_PART_MAIN);
   lv_obj_set_style_border_width(btn_back, 2, LV_PART_MAIN);
-  lv_obj_align(btn_back, LV_ALIGN_TOP_MID, 0, 10);
+  lv_obj_align(btn_back, LV_ALIGN_TOP_MID, 0, 5);
   lv_obj_t *lbl_back = lv_label_create(btn_back);
   lv_label_set_text(lbl_back, LV_SYMBOL_LEFT " Back");
   lv_obj_set_style_text_font(lbl_back, &lv_font_montserrat_16, 0);
@@ -44,12 +59,22 @@ void renderHistoryOverlay()
   lv_obj_set_style_outline_opa(table, LV_OPA_TRANSP, LV_PART_MAIN);
   lv_obj_set_style_bg_color(table, lv_color_black(), LV_PART_MAIN);
   lv_obj_set_style_bg_opa(table, LV_OPA_COVER, LV_PART_MAIN);
-  lv_table_set_col_cnt(table, 2);
-  lv_table_set_row_cnt(table, 1); // Will grow as we add rows
-  lv_table_set_col_width(table, 0, SCREEN_WIDTH / 2);
-  lv_table_set_col_width(table, 1, SCREEN_WIDTH / 2);
-  lv_table_set_cell_value(table, 0, 0, "P1");
-  lv_table_set_cell_value(table, 0, 1, "P2");
+  if (player_mode == 1)
+  {
+    lv_table_set_col_cnt(table, 1);
+    lv_table_set_row_cnt(table, 1); // Will grow as we add rows
+    lv_table_set_col_width(table, 0, SCREEN_WIDTH);
+    lv_table_set_cell_value(table, 0, 0, "Life Events");
+  }
+  else
+  {
+    lv_table_set_col_cnt(table, 2);
+    lv_table_set_row_cnt(table, 1); // Will grow as we add rows
+    lv_table_set_col_width(table, 0, SCREEN_WIDTH / 2);
+    lv_table_set_col_width(table, 1, SCREEN_WIDTH / 2);
+    lv_table_set_cell_value(table, 0, 0, "P1");
+    lv_table_set_cell_value(table, 0, 1, "P2");
+  }
   lv_obj_set_style_text_font(table, &lv_font_montserrat_20, LV_PART_ITEMS | LV_STATE_DEFAULT); // Header font
 
   // Custom draw event for styling
@@ -96,59 +121,54 @@ void renderHistoryOverlay()
   lv_obj_add_event_cb(table, draw_event_cb, LV_EVENT_DRAW_TASK_ADDED, NULL);
   lv_obj_add_flag(table, LV_OBJ_FLAG_SEND_DRAW_TASK_EVENTS);
 
-  // Build paired rows
+  // Build table rows
   int row = 1;
-  int i = 0;
-  while (i < history.size())
+  for (size_t i = 0; i < history.size(); ++i)
   {
-    const LifeHistoryEvent *p1_event = nullptr;
-    const LifeHistoryEvent *p2_event = nullptr;
-    // Find next P1 event
-    if (i < history.size() && history[i].player_id == 1)
+    const LifeHistoryEvent &evt = history[i];
+    uint32_t minutes_since_boot = evt.timestamp / 60000;
+    int life_change = evt.net_life_change;
+    int life_total = evt.life_total;
+    char buf[64] = "";
+    if (player_mode == 1 && evt.player_id == 0)
     {
-      p1_event = &history[i];
-      i++;
-      // Check if next event is P2
-      if (i < history.size() && history[i].player_id == 2)
-      {
-        p2_event = &history[i];
-        i++;
-      }
-    }
-    else if (i < history.size() && history[i].player_id == 2)
-    {
-      p2_event = &history[i];
-      i++;
-      // Check if next event is P1
-      if (i < history.size() && history[i].player_id == 1)
-      {
-        p1_event = &history[i];
-        i++;
-      }
-    }
-    lv_table_set_row_cnt(table, row + 1);
-    char p1_buf[64] = "";
-    char p2_buf[64] = "";
-    if (p1_event)
-    {
-      int life_change = p1_event->net_life_change;
-      uint32_t minutes_since_boot = p1_event->timestamp / 60000;
+      // Single player mode, only one column
       if (life_change > 0)
-        snprintf(p1_buf, sizeof(p1_buf), "+%d @ %lum", life_change, (unsigned long)minutes_since_boot);
+        snprintf(buf, sizeof(buf), "+%d @ %lum [%d]", life_change, (unsigned long)minutes_since_boot, life_total);
       else if (life_change < 0)
-        snprintf(p1_buf, sizeof(p1_buf), "%d @ %lum", life_change, (unsigned long)minutes_since_boot);
+        snprintf(buf, sizeof(buf), "%d @ %lum [%d]", life_change, (unsigned long)minutes_since_boot, life_total);
+      else
+        snprintf(buf, sizeof(buf), "0 @ %lum [%d]", (unsigned long)minutes_since_boot, life_total);
+      lv_table_set_row_cnt(table, row + 1);
+      lv_table_set_cell_value(table, row, 0, buf);
     }
-    if (p2_event)
+    else if (player_mode != 1)
     {
-      int life_change = p2_event->net_life_change;
-      uint32_t minutes_since_boot = p2_event->timestamp / 60000;
-      if (life_change > 0)
-        snprintf(p2_buf, sizeof(p2_buf), "+%d @ %lum", life_change, (unsigned long)minutes_since_boot);
-      else if (life_change < 0)
-        snprintf(p2_buf, sizeof(p2_buf), "%d @ %lum", life_change, (unsigned long)minutes_since_boot);
+      // Two player mode, two columns
+      char p1_buf[64] = "";
+      char p2_buf[64] = "";
+      if (evt.player_id == 1)
+      {
+        if (life_change > 0)
+          snprintf(p1_buf, sizeof(p1_buf), "+%d @ %lum [%d]", life_change, (unsigned long)minutes_since_boot, life_total);
+        else if (life_change < 0)
+          snprintf(p1_buf, sizeof(p1_buf), "%d @ %lum [%d]", life_change, (unsigned long)minutes_since_boot, life_total);
+        else
+          snprintf(p1_buf, sizeof(p1_buf), "0 @ %lum [%d]", (unsigned long)minutes_since_boot, life_total);
+      }
+      if (evt.player_id == 2)
+      {
+        if (life_change > 0)
+          snprintf(p2_buf, sizeof(p2_buf), "+%d @ %lum [%d]", life_change, (unsigned long)minutes_since_boot, life_total);
+        else if (life_change < 0)
+          snprintf(p2_buf, sizeof(p2_buf), "%d @ %lum [%d]", life_change, (unsigned long)minutes_since_boot, life_total);
+        else
+          snprintf(p2_buf, sizeof(p2_buf), "0 @ %lum [%d]", (unsigned long)minutes_since_boot, life_total);
+      }
+      lv_table_set_row_cnt(table, row + 1);
+      lv_table_set_cell_value(table, row, 0, p1_buf);
+      lv_table_set_cell_value(table, row, 1, p2_buf);
     }
-    lv_table_set_cell_value(table, row, 0, p1_buf);
-    lv_table_set_cell_value(table, row, 1, p2_buf);
     row++;
   }
 }

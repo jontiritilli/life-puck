@@ -11,6 +11,7 @@
 #include <life/life_counter2P.h>
 #include <helpers/event_grouper.h>
 #include "main.h"
+#include "state/state_store.h"
 
 using namespace esp_panel::drivers;
 using namespace esp_panel::board;
@@ -44,6 +45,8 @@ void setup()
   Serial.begin(115200);
   Serial.println("[setup] Serial initialized");
 
+  pinMode(PWR_KEY_Input_PIN, INPUT);
+  pinMode(PWR_Control_PIN, OUTPUT);
   esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
   bool skip_full_init = (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0);
 
@@ -58,11 +61,10 @@ void setup()
   Serial.println("[setup] Initializing board");
   board->init();
   assert(board->begin());
+  board->getBacklight()->setBrightness(player_store.getInt(KEY_BRIGHTNESS, 100));
   power_init();
-  Serial.println("[setup] Initializing battery");
   battery_init();
-  Serial.println("[setup] Creating GUI task");
-  create_task(gui_task, "gui_task", 8192, NULL, 1, NULL);
+  create_task(gui_task, "gui_task", 16384, NULL, 1, NULL);
 }
 
 void loop()

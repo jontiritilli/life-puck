@@ -11,125 +11,102 @@ struct LifeHistoryEvent
   int life_total;
   int player_id;      // 0 for single, 1/2 for 2P
   uint32_t timestamp; // ms since boot
-
-  // Returns time as "HH:MM" string since boot
-  std::string getHourMinute() const
-  {
-    uint32_t total_seconds = timestamp / 1000;
-    uint32_t hours = total_seconds / 3600;
-    uint32_t minutes = (total_seconds % 3600) / 60;
-    char buf[6];
-    snprintf(buf, sizeof(buf), "%02u:%02u", hours, minutes);
-    return std::string(buf);
-  }
 };
 
 class EventGrouper
 {
 public:
-  int life_total = 0; // Always reflects the latest committed state
-
-  void setInitialLifeTotal(int value)
+  EventGrouper(uint32_t window_ms = 1000, int initial_life = 0, int player_id = 0)
+      : grouping_window(window_ms),
+        active(false),
+        net_change(0),
+        player_id(player_id),
+        last_event_time(0),
+        life_total(initial_life),
+        group_start_time(0),
+        commit_callback(nullptr)
   {
-    life_total = value;
   }
-  void commit()
+
+  // Returns true if a group is active and waiting for commit
+  bool isCommitPending() const
   {
-    if (active && net_change != 0)
-    {
-      int new_life_total = life_total + net_change;
-      LifeHistoryEvent evt{net_change, new_life_total, player_id, last_event_time};
-      history.push_back(evt);
-      life_total = new_life_total; // Update state to latest committed value
-      printf("[EventGrouper] Committing event: Change=%d, total=%d, Player=%d, Time=%u\n", evt.net_life_change, evt.life_total, evt.player_id, evt.timestamp);
-      if (commit_callback)
-        commit_callback(evt);
-      // Clear commit pending state immediately after callback
-      active = false;
-      net_change = 0;
-    }
-    else
-    {
-      // Always clear state if not committing
-      active = false;
-      net_change = 0;
-    }
+    return active;
   }
 
   // Returns the current pending net change (0 if inactive)
-  int getPendingChange() const { return active ? net_change : 0; }
-  int getPendingChangeForPlayer(int player) const
+  int getPendingChange() const
   {
-    return (active && player_id == player) ? net_change : 0;
+    printf("[EventGrouper] getPendingChange: active=%d, net_change=%d\n", active, net_change);
+    return net_change;
   }
-  EventGrouper(uint32_t window_ms = 1000, int initial_life = 0)
-      : grouping_window(window_ms), active(false), net_change(0), player_id(0), last_event_time(0), life_total(initial_life) {}
+
+  int getLifeTotal() const
+  {
+    printf("[EventGrouper] getLifeTotal: life_total=%d\n", life_total);
+    return life_total;
+  }
 
   // Call this for each life change (tap/swipe)
   void handleChange(int player, int change, std::function<void(const LifeHistoryEvent &)> onCommit)
   {
     commit_callback = onCommit;
     uint32_t now = millis();
-    // Commit previous group if needed before starting a new one
-    if (!active || player != player_id || (now - last_event_time) > grouping_window)
+    last_event_time = now;
+    net_change += change;
+    if (!active)
     {
-      if (active && net_change != 0)
-      {
-        commit();
-      }
       // Start new group
       active = true;
-      net_change = change;
-      player_id = player;
       group_start_time = now;
     }
-    else
-    {
-      // Accumulate
-      net_change += change;
-    }
-    last_event_time = now;
-    scheduleCommit();
   }
 
   // Call this periodically (e.g., in loop) to check for timeout
-  void update()
+  void loop()
   {
-    if (active && (millis() - last_event_time) > grouping_window)
+    uint32_t now = millis(); // MS since boot
+    bool isWindowExpired = (now - last_event_time) > grouping_window;
+    if ((now - last_event_time) % 50 == 0)
     {
-      commit();
+      printf("[EventGrouper] update: active=%d, net_change=%d, now=%u, last_event_time=%u, grouping_window=%u, delta=%u\n, isWindowExpired=%d", active, net_change, now, last_event_time, grouping_window, now - last_event_time, isWindowExpired);
+    }
+    if (active && isWindowExpired && net_change != 0)
+    {
+      printf("[EventGrouper] update: committing due to rolling window timeout\n");
+      int new_life_total = life_total + net_change;
+      LifeHistoryEvent evt{net_change, new_life_total, player_id, last_event_time};
+      history.push_back(evt);
+      life_total = new_life_total; // Update state to latest committed value
+      if (commit_callback)
+        commit_callback(evt);
+      // Clear commit pending state immediately after callback
+      active = false;
+      net_change = 0;
+      commit_callback = nullptr; // Clear callback to avoid dangling reference
+      printf("[EventGrouper] commit() exit: life_total=%d, active=%d, net_change=%d\n", life_total, active, net_change);
     }
   }
 
   // Access history
-  const std::vector<LifeHistoryEvent> &getHistory() const
+  std::vector<LifeHistoryEvent> getHistory()
   {
-    printf("[EventGrouper] History size: %zu\n", history.size());
-    for (const auto &event : history)
-    {
-      printf("[EventGrouper] History event: Change=%d, Player=%d, Time=%u\n", event.net_life_change, event.player_id, event.timestamp);
-    }
+    printf("[EventGrouper] getHistory: size=%zu\n", history.size());
+
     return history;
   }
 
   // Helper: Reset history
-  void resetHistory()
+  void resetHistory(int base_life)
   {
-    printf("[EventGrouper] Resetting history\n");
+    printf("[EventGrouper] Before reset: history size=%zu, active=%d, net_change=%d, player_id=%d, group_start_time=%u, last_event_time=%u, life_total=%d\n", history.size(), active, net_change, player_id, group_start_time, last_event_time, life_total);
     history.clear();
     active = false;
     net_change = 0;
-    player_id = 0;
     group_start_time = 0;
     last_event_time = 0;
-    life_total = 0;
-    scheduleCommit(); // Reset any pending commit state
-  }
-
-  // Helper: returns true if a commit is pending (for polling in main loop)
-  bool isCommitPending() const
-  {
-    return active && net_change != 0;
+    life_total = base_life;
+    printf("[EventGrouper] After reset: history size=%zu, active=%d, net_change=%d, player_id=%d, group_start_time=%u, last_event_time=%u, life_total=%d\n", history.size(), active, net_change, player_id, group_start_time, last_event_time, life_total);
   }
 
 private:
@@ -137,14 +114,9 @@ private:
   bool active;
   int net_change;
   int player_id;
+  int life_total;
   uint32_t group_start_time;
   uint32_t last_event_time;
   std::vector<LifeHistoryEvent> history;
   std::function<void(const LifeHistoryEvent &)> commit_callback;
-
-  void scheduleCommit()
-  {
-    // For embedded, actual timer/callback may be handled in main loop via update()
-    // This is a placeholder for future timer integration
-  }
 };

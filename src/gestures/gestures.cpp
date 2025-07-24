@@ -6,20 +6,8 @@
 #include <functional>
 #include <map>
 #include <stdio.h>
-
-// Gesture types
-enum class GestureType
-{
-  TapTop,
-  TapBottom,
-  SwipeUp,
-  SwipeDown,
-  LongPressMenu,
-  MenuTL,
-  MenuTR,
-  MenuBL,
-  MenuBR
-};
+#include "gestures.h"
+#include <constants/constants.h>
 
 // Callback type for gestures
 using GestureCallback = std::function<void()>;
@@ -54,7 +42,7 @@ void lvgl_gesture_event_handler(lv_event_t *e)
   if (indev)
   {
     lv_indev_get_point(indev, &point);
-    printf("[lvgl_gesture_event_handler] Event code=%d, point=(%d, %d)\n", code, point.x, point.y);
+    // printf("[lvgl_gesture_event_handler] Event code=%d, point=(%d, %d)\n", code, point.x, point.y);
   }
 
   if (code == LV_EVENT_PRESSED)
@@ -66,11 +54,31 @@ void lvgl_gesture_event_handler(lv_event_t *e)
     lv_dir_t dir = lv_indev_get_gesture_dir(indev);
     if (dir == LV_DIR_TOP)
     {
+      // Quadrant-specific swipe up
+      if (point.x < SCREEN_WIDTH / 2)
+      {
+        trigger_gesture(GestureType::SwipeUpLeft);
+      }
+      else
+      {
+        trigger_gesture(GestureType::SwipeUpRight);
+      }
+      // Generic swipe up
       trigger_gesture(GestureType::SwipeUp);
       swipe_detected = true;
     }
     else if (dir == LV_DIR_BOTTOM)
     {
+      // Quadrant-specific swipe down
+      if (point.x < SCREEN_WIDTH / 2)
+      {
+        trigger_gesture(GestureType::SwipeDownLeft);
+      }
+      else
+      {
+        trigger_gesture(GestureType::SwipeDownRight);
+      }
+      // Generic swipe down
       trigger_gesture(GestureType::SwipeDown);
       swipe_detected = true;
     }
@@ -79,12 +87,28 @@ void lvgl_gesture_event_handler(lv_event_t *e)
   {
     if (!swipe_detected)
     {
-      if (point.y < LV_VER_RES / 2)
+      if (point.y < SCREEN_HEIGHT / 2)
       {
+        if (point.x < SCREEN_WIDTH / 2)
+        {
+          trigger_gesture(GestureType::TapTopLeft);
+        }
+        else
+        {
+          trigger_gesture(GestureType::TapTopRight);
+        }
         trigger_gesture(GestureType::TapTop);
       }
       else
       {
+        if (point.x < SCREEN_WIDTH / 2)
+        {
+          trigger_gesture(GestureType::TapBottomLeft);
+        }
+        else
+        {
+          trigger_gesture(GestureType::TapBottomRight);
+        }
         trigger_gesture(GestureType::TapBottom);
       }
     }
@@ -123,6 +147,11 @@ void init_gesture_handling(lv_obj_t *root_obj)
   lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_ALL, NULL);
 }
 
+// Clear all registered gesture callbacks
+void clear_gesture_callbacks()
+{
+  gesture_callbacks.clear();
+}
 // Usage example (to be called from your app):
 // register_gesture_callback(GestureType::TapTop, [](){ /* increment counter */ });
 // register_gesture_callback(GestureType::SwipeDown, [](){ /* decrement by 5 */ });

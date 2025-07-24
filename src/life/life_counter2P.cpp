@@ -1,19 +1,14 @@
-#include <state/state_store.h>
 #include "Arduino.h"
-#include <helpers/animation_helpers.h>
 #include <lvgl.h>
 #include <math.h>
 #include <stdio.h>
-#include <gestures/gestures.h>
 #include "life_counter2P.h"
+#include <gestures/gestures.h>
+#include <helpers/animation_helpers.h>
+#include <state/state_store.h>
 #include <helpers/event_grouper.h>
-// --- Arc Segment Definition ---
-typedef struct
-{
-  int start_angle;
-  int end_angle;
-  lv_color_t color;
-} arc_segment_t;
+#include <menu/menu.h>
+#include "constants/constants.h"
 
 // --- Two Player Life Counter GUI State ---
 static lv_obj_t *life_arc_p1 = nullptr;
@@ -34,15 +29,14 @@ static lv_color_t interpolate_color(lv_color_t c1, lv_color_t c2, uint8_t t);
 void increment_life(int player, int value);
 void decrement_life(int player, int value);
 void reset_life(int player);
-static bool is_left_half(int x);
 void queue_life_change_2p(int player, int value);
 
 // Suppress tap after gesture
 static bool gesture_active = false;
 
 // Event grouping for 2P mode
-EventGrouper event_grouper_p1(1000, 0); // Player 1
-EventGrouper event_grouper_p2(1000, 0); // Player 2
+EventGrouper event_grouper_p1(1000, max_life, 1);
+EventGrouper event_grouper_p2(1000, max_life, 2);
 
 // Define grouped_change_label and is_initializing for 2P context
 static lv_obj_t *grouped_change_label_p1 = nullptr;
@@ -52,52 +46,44 @@ static bool is_initializing_2p = false;
 // Call this after boot animation to show the two-player life counter
 void init_life_counter_2P()
 {
-  printf("[init_life_counter_2P] called\n");
+  is_initializing_2p = true; // Set flag to indicate initialization is active
   // Clean up previous objects before creating new ones
   if (life_arc_p1)
   {
-    printf("[init_life_counter_2P] Deleting life_arc_p1\n");
     lv_obj_del(life_arc_p1);
     life_arc_p1 = nullptr;
   }
   if (life_arc_p2)
   {
-    printf("[init_life_counter_2P] Deleting life_arc_p2\n");
     lv_obj_del(life_arc_p2);
     life_arc_p2 = nullptr;
   }
   if (life_label_p1)
   {
-    printf("[init_life_counter_2P] Deleting life_label_p1\n");
     lv_obj_del(life_label_p1);
     life_label_p1 = nullptr;
   }
   if (life_label_p2)
   {
-    printf("[init_life_counter_2P] Deleting life_label_p2\n");
     lv_obj_del(life_label_p2);
     life_label_p2 = nullptr;
   }
   if (grouped_change_label_p1)
   {
-    printf("[init_life_counter_2P] Deleting grouped_change_label_p1\n");
     lv_obj_del(grouped_change_label_p1);
     grouped_change_label_p1 = nullptr;
   }
   if (grouped_change_label_p2)
   {
-    printf("[init_life_counter_2P] Deleting grouped_change_label_p2\n");
     lv_obj_del(grouped_change_label_p2);
     grouped_change_label_p2 = nullptr;
   }
   if (center_line)
   {
-    printf("[init_life_counter_2P] Deleting center_line\n");
     lv_obj_del(center_line);
     center_line = nullptr;
   }
 
-  printf("[init_life_counter_2P] Creating new objects\n");
   if (!center_line)
   {
     printf("[init_life_counter_2P] Creating center_line\n");
@@ -120,14 +106,14 @@ void init_life_counter_2P()
     // Create arc/label for Player 1 (sweep left: 90° to 0°, centered)
     life_arc_p1 = lv_arc_create(lv_scr_act());
     lv_obj_add_flag(life_arc_p1, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_set_size(life_arc_p1, ARC_OUTER_DIAMETER, ARC_OUTER_DIAMETER);
+    lv_obj_set_size(life_arc_p1, SCREEN_DIAMETER, SCREEN_DIAMETER);
     lv_obj_align(life_arc_p1, LV_ALIGN_CENTER, 0, 0);
     lv_arc_set_bg_angles(life_arc_p1, 0, 360); // left sweep background
     lv_arc_set_angles(life_arc_p1, 90, 270);   // indicator starts at bottom center
     lv_obj_set_style_arc_color(life_arc_p1, GREEN_COLOR, LV_PART_INDICATOR);
     lv_obj_set_style_arc_opa(life_arc_p1, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_arc_width(life_arc_p1, 0, LV_PART_MAIN);
-    lv_obj_set_style_arc_width(life_arc_p1, ARC_WIDTH_2P, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_width(life_arc_p1, ARC_WIDTH, LV_PART_INDICATOR);
     lv_obj_set_style_arc_rounded(life_arc_p1, 0, LV_PART_INDICATOR);
     lv_obj_remove_style(life_arc_p1, NULL, LV_PART_KNOB);
     lv_obj_clear_flag(life_arc_p1, LV_OBJ_FLAG_CLICKABLE);
@@ -141,7 +127,7 @@ void init_life_counter_2P()
     lv_label_set_text(life_label_p1, "0");
     lv_obj_set_style_text_font(life_label_p1, &lv_font_montserrat_64, 0);
     lv_obj_set_style_text_color(life_label_p1, lv_color_white(), 0);
-    lv_obj_align(life_label_p1, LV_ALIGN_CENTER, -ARC_OUTER_DIAMETER / 4, 0);
+    lv_obj_align(life_label_p1, LV_ALIGN_CENTER, -SCREEN_DIAMETER / 4, 0);
     lv_obj_set_style_text_opa(life_label_p1, LV_OPA_TRANSP, 0);
   }
   if (!life_arc_p2)
@@ -150,7 +136,7 @@ void init_life_counter_2P()
     // Create arc/label for Player 2 (sweep right: 90° to 180°, centered)
     life_arc_p2 = lv_arc_create(lv_scr_act());
     lv_obj_add_flag(life_arc_p2, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_set_size(life_arc_p2, ARC_OUTER_DIAMETER, ARC_OUTER_DIAMETER);
+    lv_obj_set_size(life_arc_p2, SCREEN_DIAMETER, SCREEN_DIAMETER);
     lv_obj_align(life_arc_p2, LV_ALIGN_CENTER, 0, 0);
     lv_arc_set_bg_angles(life_arc_p2, 0, 360);         // right sweep background
     lv_arc_set_angles(life_arc_p2, 270, 90);           // indicator starts at top center, grows counterclockwise
@@ -158,8 +144,8 @@ void init_life_counter_2P()
     lv_obj_set_style_arc_color(life_arc_p2, GREEN_COLOR, LV_PART_INDICATOR);
     lv_obj_set_style_arc_opa(life_arc_p2, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_arc_width(life_arc_p2, 0, LV_PART_MAIN);
-    lv_obj_set_style_arc_width(life_arc_p2, ARC_WIDTH_2P, LV_PART_INDICATOR);
-    lv_obj_set_style_arc_rounded(life_arc_p2, 0, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_width(life_arc_p2, ARC_WIDTH, LV_PART_INDICATOR);
+    // lv_obj_set_style_arc_rounded(life_arc_p2, 0, LV_PART_INDICATOR); // Square ends
     lv_obj_remove_style(life_arc_p2, NULL, LV_PART_KNOB);
     lv_obj_clear_flag(life_arc_p2, LV_OBJ_FLAG_CLICKABLE);
   }
@@ -171,7 +157,7 @@ void init_life_counter_2P()
     lv_label_set_text(life_label_p2, "0");
     lv_obj_set_style_text_font(life_label_p2, &lv_font_montserrat_64, 0);
     lv_obj_set_style_text_color(life_label_p2, lv_color_white(), 0);
-    lv_obj_align(life_label_p2, LV_ALIGN_CENTER, ARC_OUTER_DIAMETER / 4, 0);
+    lv_obj_align(life_label_p2, LV_ALIGN_CENTER, SCREEN_DIAMETER / 4, 0);
   }
   // Add grouped change labels for Player 1 and Player 2
 
@@ -196,10 +182,6 @@ void init_life_counter_2P()
     lv_obj_set_style_text_color(grouped_change_label_p2, lv_color_white(), 0);
     lv_obj_align_to(grouped_change_label_p2, life_label_p2, LV_ALIGN_OUT_TOP_MID, 0, -10);
   }
-  printf("[init_life_counter_2P] Setting initial life\n");
-  // Set initial life for both players from state
-  event_grouper_p1.setInitialLifeTotal(max_life);
-  event_grouper_p2.setInitialLifeTotal(max_life);
 
   if (life_arc_p1)
   {
@@ -240,76 +222,6 @@ void init_life_counter_2P()
   fade_in_obj(life_label_p1, 1000, 0, NULL);
   lv_obj_clear_flag(life_label_p2, LV_OBJ_FLAG_HIDDEN);
   fade_in_obj(life_label_p2, 1000, 0, NULL);
-
-  // Register gesture event handler for the screen
-  lv_obj_add_event_cb(lv_scr_act(), life_counter_gesture_event_handler, LV_EVENT_GESTURE, NULL);
-  // Register tap (clicked) event handler for the screen
-  lv_obj_add_event_cb(lv_scr_act(), [](lv_event_t *e)
-                      {
-    if (gesture_active) {
-      gesture_active = false; // Reset for next event
-      return;
-    }
-    lv_indev_t *indev = lv_indev_get_act();
-    if (!indev)
-      return;
-    lv_point_t p;
-    lv_indev_get_point(indev, &p);
-    int x = p.x;
-    int y = p.y;
-    bool is_left = is_left_half(x);
-    bool is_top = y < (SCREEN_HEIGHT / 2);
-    if (is_left) {
-      if (is_top)
-        increment_life(1, 1);
-      else
-        decrement_life(1, 1);
-    } else {
-      if (is_top)
-        increment_life(2, 1);
-      else
-        decrement_life(2, 1);
-    } }, LV_EVENT_CLICKED, NULL);
-}
-
-// Gesture event handler for two-player mode
-static void life_counter_gesture_event_handler(lv_event_t *e)
-{
-  lv_indev_t *indev = lv_indev_get_act();
-  if (!indev)
-    return;
-  lv_point_t p;
-  lv_indev_get_point(indev, &p);
-  int x = p.x;
-  int y = p.y;
-  // Detect left or right half (no center exclusion)
-  bool is_left = is_left_half(x);
-  // Detect gesture type
-  lv_dir_t gesture = lv_indev_get_gesture_dir(indev);
-  gesture_active = true;
-  switch (gesture)
-  {
-  case LV_DIR_TOP:
-    if (is_left)
-      increment_life(1, 5);
-    else
-      increment_life(2, 5);
-    break;
-  case LV_DIR_BOTTOM:
-    if (is_left)
-      decrement_life(1, 5);
-    else
-      decrement_life(2, 5);
-    break;
-  case LV_DIR_NONE:
-  default:
-    // Treat as tap
-    if (is_left)
-      increment_life(1, 1);
-    else
-      increment_life(2, 1);
-    break;
-  }
 }
 
 // Increment life total and update label
@@ -327,9 +239,8 @@ void decrement_life(int player, int value)
 // Reset life total for Player 1
 void reset_life_p1()
 {
-  int start_life_conf = player_store.getLife(LIFE_STD_START);
-  event_grouper_p1.setInitialLifeTotal(start_life_conf);
-  update_life_label(1, start_life_conf);
+  event_grouper_p1.resetHistory(max_life);
+  update_life_label(1, max_life);
 }
 
 // Increment life total and update label for Player 2
@@ -347,9 +258,8 @@ void decrement_life_p2(int value)
 // Reset life total for Player 2
 void reset_life_p2()
 {
-  int start_life_conf = player_store.getLife(LIFE_STD_START);
-  event_grouper_p2.setInitialLifeTotal(start_life_conf);
-  update_life_label(2, start_life_conf);
+  event_grouper_p2.resetHistory(max_life);
+  update_life_label(2, max_life);
 }
 
 // Animation callback for arc (Player 1)
@@ -378,7 +288,31 @@ static void arc_sweep_anim_cb_p2(void *var, int32_t v)
 }
 
 // Animation ready callback (optional, can be NULL)
-static void arc_sweep_anim_ready_cb(lv_anim_t *a) {}
+static void arc_sweep_anim_ready_cb(lv_anim_t *a)
+{
+  is_initializing_2p = false;
+
+  clear_gesture_callbacks(); // Clear any previous gesture callbacks
+  // Register gesture callbacks for tap and swipe, consistent with 1P mode
+  register_gesture_callback(GestureType::TapTopLeft, []()
+                            { increment_life(1, 1); });
+  register_gesture_callback(GestureType::TapBottomLeft, []()
+                            { decrement_life(1, 1); });
+  register_gesture_callback(GestureType::SwipeUpLeft, []()
+                            { increment_life(1, 5); });
+  register_gesture_callback(GestureType::SwipeDownLeft, []()
+                            { decrement_life(1, 5); });
+  register_gesture_callback(GestureType::TapTopRight, []()
+                            { increment_life(2, 1); });
+  register_gesture_callback(GestureType::TapBottomRight, []()
+                            { decrement_life(2, 1); });
+  register_gesture_callback(GestureType::SwipeUpRight, []()
+                            { increment_life(2, 5); });
+  register_gesture_callback(GestureType::SwipeDownRight, []()
+                            { decrement_life(2, 5); });
+  register_gesture_callback(GestureType::LongPressMenu, []()
+                            { renderMenu(MENU_CONTEXTUAL); });
+}
 
 // Function to convert life total to arc segment
 // Player 1: 210° to 90° (counterclockwise)
@@ -459,7 +393,6 @@ static arc_segment_t life_to_arc_p2(int life_total)
     seg.start_angle = (seg.end_angle - arc_span + 360) % 360; // Always positive
   }
   seg.color = arc_color;
-  printf("life_p2: %d / %d => start_angle: %d, end_angle: %d\n", arc_life, max_life, seg.start_angle, seg.end_angle);
   return seg;
 }
 
@@ -479,13 +412,6 @@ void update_life_label(int player, int new_life_total)
   if (life_arc)
   {
     arc_segment_t seg = (player == 1) ? life_to_arc_p1(new_life_total) : life_to_arc_p2(new_life_total);
-    uint16_t c16 = lv_color_to_u16(seg.color);
-    uint8_t r = (c16 >> 11) & 0x1F;
-    uint8_t g = (c16 >> 5) & 0x3F;
-    uint8_t b = c16 & 0x1F;
-    r = (r << 3) | (r >> 2);
-    g = (g << 2) | (g >> 4);
-    b = (b << 3) | (b >> 2);
     lv_arc_set_angles(life_arc, seg.start_angle, seg.end_angle);
     lv_obj_set_style_arc_color(life_arc, seg.color, LV_PART_INDICATOR);
   }
@@ -515,21 +441,15 @@ static lv_color_t interpolate_color(lv_color_t c1, lv_color_t c2, uint8_t t)
   return lv_color_make(r, g, b);
 }
 
-// Helper: returns true if x is in the left half of the screen
-static bool is_left_half(int x)
-{
-  return x < (SCREEN_WIDTH / 2);
-}
-
 void life_counter2p_loop()
 {
   if (event_grouper_p1.isCommitPending())
   {
-    event_grouper_p1.update();
+    event_grouper_p1.loop();
   }
   if (event_grouper_p2.isCommitPending())
   {
-    event_grouper_p2.update();
+    event_grouper_p2.loop();
   }
 }
 
@@ -540,7 +460,7 @@ void queue_life_change_2p(int player, int value)
   if (grouped_change_label && !is_initializing_2p)
   {
     // Show the pending change BEFORE the grouper updates its state
-    int pending_change = grouper->getPendingChangeForPlayer(player) + value;
+    int pending_change = grouper->getPendingChange() + value;
     char buf[8];
     if (pending_change > 0)
     {
@@ -563,10 +483,14 @@ void queue_life_change_2p(int player, int value)
   grouper->handleChange(player, value, [player](const LifeHistoryEvent &evt)
                         {
                           printf("[queue_life_change_2p] Player %d life change committed: %d\n", player, evt.life_total);
-                         // Hide grouped change label after commit
-                         lv_obj_t *grouped_change_label = (player == 1) ? grouped_change_label_p1 : grouped_change_label_p2;
-                         if (player == 1)
-                           update_life_label(1, evt.life_total);
-                         else
-                           update_life_label(2, evt.life_total); });
+                          // Hide grouped change label after commit
+                          lv_obj_t *grouped_change_label = (player == 1) ? grouped_change_label_p1 : grouped_change_label_p2;
+                          if (is_initializing_2p) {
+                            printf("[queue_life_change_2p] Skipping update_life_label during initialization.\n");
+                            return;
+                          }
+                          if (player == 1)
+                            update_life_label(1, evt.life_total);
+                          else
+                            update_life_label(2, evt.life_total); });
 }

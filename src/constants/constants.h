@@ -1,9 +1,18 @@
 #pragma once
+#include "lvgl.h"
 
 #define SCREEN_WIDTH 360 // Default, or set dynamically at runtime
 #define SCREEN_HEIGHT 360
-
+#define SCREEN_DIAMETER SCREEN_WIDTH
+#define ARC_WIDTH 5
 #define LIFE_STD_START 40
+
+typedef struct
+{
+  int start_angle;
+  int end_angle;
+  lv_color_t color;
+} arc_segment_t;
 
 // Enum for menu states
 enum MenuState
@@ -12,7 +21,8 @@ enum MenuState
   MENU_CONTEXTUAL,
   MENU_SETTINGS,
   MENU_START_LIFE,
-  MENU_HISTORY
+  MENU_HISTORY,
+  MENU_BRIGHTNESS
 };
 
 enum ContextualQuadrant
@@ -38,3 +48,4 @@ enum ContextualQuadrant
 #define PLAYER_STORE "player_store"
 #define KEY_LIFE "life"
 #define KEY_PLAYER_MODE "player_mode"
+#define KEY_BRIGHTNESS "brightness"

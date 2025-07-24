@@ -41,7 +41,6 @@ void fade_out_obj(lv_obj_t *obj, uint32_t duration, uint32_t delay, lv_anim_read
   lv_anim_t anim;
   lv_anim_init(&anim);
   lv_anim_set_var(&anim, obj);
-  printf("[fade_out_obj] Fading out obj=%p, duration=%u, delay=%u\n", obj, duration, delay);
   if (lv_obj_check_type(obj, &lv_label_class))
   {
     lv_anim_set_exec_cb(&anim, text_fade_anim_cb);

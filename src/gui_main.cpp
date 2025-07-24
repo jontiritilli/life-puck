@@ -41,7 +41,7 @@ void ui_init(void)
         if (anim && anim->var) {
           lv_obj_add_flag((lv_obj_t *)anim->var, LV_OBJ_FLAG_HIDDEN);
         }
-        int player_mode = player_store.getInt(KEY_PLAYER_MODE, 0);
+        int player_mode = player_store.getInt(KEY_PLAYER_MODE, 1);
         // Now show the life counter (arc, label, animation)
         life_counter_mode = player_mode;
         if (player_mode == 1) {
@@ -49,8 +49,6 @@ void ui_init(void)
         } else {
           init_life_counter_2P();
         }
-        register_gesture_callback(GestureType::LongPressMenu, []()
-                                  { renderMenu(MENU_CONTEXTUAL); });
       });
     } });
 }
