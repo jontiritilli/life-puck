@@ -3,6 +3,7 @@
 #include "battery/battery_state.h"
 #include "menu/menu.h"
 #include <lvgl.h>
+#include <state/state_store.h>
 
 // Use a static callback instead of a lambda
 static void btn_life_event_cb(lv_event_t *e)
@@ -58,18 +59,31 @@ void renderSettingsOverlay()
   lv_obj_t *btn_brightness = lv_btn_create(settings_menu);
   lv_obj_set_size(btn_brightness, 180, 40);
   lv_obj_set_grid_cell(btn_brightness, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 2, 1);
+  lv_obj_add_event_cb(btn_brightness, [](lv_event_t *e)
+                      { renderMenu(MENU_BRIGHTNESS); }, LV_EVENT_CLICKED, NULL);
   lv_obj_t *lbl_brightness = lv_label_create(btn_brightness);
   lv_label_set_text(lbl_brightness, "Brightness");
   lv_obj_set_style_text_font(lbl_brightness, &lv_font_montserrat_20, 0);
   lv_obj_center(lbl_brightness);
-  lv_obj_add_event_cb(btn_brightness, [](lv_event_t *e)
-                      { renderMenu(MENU_BRIGHTNESS); }, LV_EVENT_CLICKED, NULL);
 
   // Amp Counter
-  lv_obj_t *lbl_amp = lv_label_create(settings_menu);
-  lv_label_set_text(lbl_amp, "Amp...coming soon");
-  lv_obj_set_style_text_font(lbl_amp, &lv_font_montserrat_16, 0);
-  lv_obj_set_grid_cell(lbl_amp, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 3, 1);
+  int amp_mode = player_store.getInt(AMP_MODE, 0);
+  lv_obj_t *btn_amp_toggle = lv_btn_create(settings_menu);
+  lv_obj_set_size(btn_amp_toggle, 180, 40);
+  lv_obj_set_grid_cell(btn_amp_toggle, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 3, 1);
+  lv_obj_t *lbl_amp_label = lv_label_create(btn_amp_toggle);
+  lv_label_set_text(lbl_amp_label, (amp_mode ? "Amp Off" : "Amp On")); // shows current state
+  lv_obj_set_style_text_font(lbl_amp_label, &lv_font_montserrat_20, 0);
+  lv_obj_center(lbl_amp_label);
+  // Store the label pointer as user data for the callback
+  lv_obj_add_event_cb(btn_amp_toggle, [](lv_event_t *e)
+                      {
+    lv_obj_t *btn = (lv_obj_t *)lv_event_get_target(e);
+    lv_obj_t *label = lv_obj_get_child(btn, 0);
+    int current = player_store.getInt(AMP_MODE, 0);
+    int new_mode = !current;
+    player_store.putInt(AMP_MODE, new_mode);
+    lv_label_set_text(label, (new_mode ? "Amp OFF" : "Amp ON")); }, LV_EVENT_CLICKED, NULL);
 
   // Battery
   lv_obj_t *lbl_batt = lv_label_create(settings_menu);
