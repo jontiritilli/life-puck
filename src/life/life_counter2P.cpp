@@ -11,8 +11,8 @@
 #include "constants/constants.h"
 
 // --- Two Player Life Counter GUI State ---
-static lv_obj_t *life_arc_p1 = nullptr;
-static lv_obj_t *life_arc_p2 = nullptr;
+lv_obj_t *life_arc_p1 = nullptr; // Now global for menu access
+lv_obj_t *life_arc_p2 = nullptr; // Now global for menu access
 static lv_obj_t *life_label_p1 = nullptr;
 static lv_obj_t *life_label_p2 = nullptr;
 static lv_obj_t *center_line = nullptr;

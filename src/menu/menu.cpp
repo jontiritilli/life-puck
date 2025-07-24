@@ -31,6 +31,8 @@ int circle_radius = circle_diameter / 2;
 static void togglePlayerMode();
 static void resetActiveCounter();
 static void showHistoryOverlay();
+static void showLifeScreen();
+static void hideLifeScreen();
 static bool is_in_center_cancel_area(lv_event_t *e);
 void clearMenus();
 void renderMenu(MenuState menuType);
@@ -125,9 +127,8 @@ static void contextual_btn_event_cb(lv_event_t *e)
 // Draw contextual menu overlay with 4 quadrants using LVGL
 void renderContextualMenuOverlay()
 {
-  clearMenus();
   // Make the overlay a true circle, centered on the screen
-  int circle_diameter = (SCREEN_WIDTH < SCREEN_HEIGHT ? SCREEN_WIDTH : SCREEN_HEIGHT) + 5; // Increase size by 5 pixels
+  int circle_diameter = (SCREEN_WIDTH < SCREEN_HEIGHT ? SCREEN_WIDTH : SCREEN_HEIGHT); // Increase size by 5 pixels
   int circle_radius = circle_diameter / 2;
   int circle_x = (SCREEN_WIDTH - circle_diameter) / 2;  // Center the circle horizontally
   int circle_y = (SCREEN_HEIGHT - circle_diameter) / 2; // Center the circle vertically
@@ -140,7 +141,6 @@ void renderContextualMenuOverlay()
   lv_obj_set_style_radius(contextual_menu, LV_RADIUS_CIRCLE, LV_PART_MAIN);
   lv_obj_align(contextual_menu, LV_ALIGN_CENTER, 0, 0);
   lv_obj_clear_flag(contextual_menu, LV_OBJ_FLAG_SCROLLABLE);
-  lv_obj_set_scrollbar_mode(contextual_menu, LV_SCROLLBAR_MODE_OFF); // Disable scrollbar
 
   // Use a slightly smaller ring for the menu ring inside the overlay circle
   int ring_diameter = circle_diameter;
@@ -205,7 +205,7 @@ void renderContextualMenuOverlay()
     renderMenu(MENU_NONE); }, LV_EVENT_CLICKED, NULL);
   // Label for center cancel
   lv_obj_t *lbl_cancel = lv_label_create(center_cancel);
-  lv_label_set_text(lbl_cancel, LV_SYMBOL_OK);
+  lv_label_set_text(lbl_cancel, LV_SYMBOL_CLOSE);
   lv_obj_set_style_text_font(lbl_cancel, &lv_font_montserrat_30, 0);
   lv_obj_center(lbl_cancel); // Center the label in the cancel button
 }
@@ -214,6 +214,7 @@ void renderContextualMenuOverlay()
 void renderMenu(MenuState menuType)
 {
   clearMenus();
+  hideLifeScreen();
   switch (menuType)
   {
   case MENU_CONTEXTUAL:
@@ -231,7 +232,9 @@ void renderMenu(MenuState menuType)
   case MENU_BRIGHTNESS:
     renderBrightnessOverlay();
     break;
+  case MENU_NONE:
   default:
+    showLifeScreen();
     break;
   }
 }
@@ -269,4 +272,28 @@ bool is_in_quadrant(lv_event_t *e, int angle_start, int angle_end)
   float dist = sqrtf(dx * dx + dy * dy);
   int hole_radius = ring_radius / 3;
   return (dist >= hole_radius && dist <= ring_radius && angle >= angle_start && angle < angle_end);
+}
+
+// Extern declarations for life counter objects
+extern lv_obj_t *life_arc;
+extern lv_obj_t *life_arc_p1;
+extern lv_obj_t *life_arc_p2;
+
+void hideLifeScreen()
+{
+  if (life_arc)
+    lv_obj_add_flag(life_arc, LV_OBJ_FLAG_HIDDEN);
+  if (life_arc_p1)
+    lv_obj_add_flag(life_arc_p1, LV_OBJ_FLAG_HIDDEN);
+  if (life_arc_p2)
+    lv_obj_add_flag(life_arc_p2, LV_OBJ_FLAG_HIDDEN);
+}
+void showLifeScreen()
+{
+  if (life_arc)
+    lv_obj_clear_flag(life_arc, LV_OBJ_FLAG_HIDDEN);
+  if (life_arc_p1)
+    lv_obj_clear_flag(life_arc_p1, LV_OBJ_FLAG_HIDDEN);
+  if (life_arc_p2)
+    lv_obj_clear_flag(life_arc_p2, LV_OBJ_FLAG_HIDDEN);
 }

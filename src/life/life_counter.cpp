@@ -11,7 +11,7 @@
 #include "constants/constants.h"
 
 // --- Life Counter GUI State ---
-static lv_obj_t *life_arc = nullptr;
+lv_obj_t *life_arc = nullptr; // Now global for menu access
 static lv_obj_t *life_label = nullptr;
 static lv_obj_t *grouped_change_label = nullptr;
 static int max_life = player_store.getLife(LIFE_STD_START);
