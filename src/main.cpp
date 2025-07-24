@@ -47,17 +47,6 @@ void setup()
 
   pinMode(PWR_KEY_Input_PIN, INPUT);
   pinMode(PWR_Control_PIN, OUTPUT);
-  esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
-  bool skip_full_init = (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0);
-
-  Serial.printf("[setup] Wakeup reason: %d\n", (int)wakeup_reason);
-  if (skip_full_init)
-  {
-    Serial.println("[setup] Woke from deep sleep via power button, skipping full init");
-    // e.g., board->getBacklight()->on(); restore state, etc.
-    // Optionally return early or only call minimal functions
-    return;
-  }
   Serial.println("[setup] Initializing board");
   board->init();
   assert(board->begin());
