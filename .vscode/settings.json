@@ -13,6 +13,15 @@
     "vector": "cpp",
     "format": "cpp",
     "initializer_list": "cpp",
-    "regex": "cpp"
+    "regex": "cpp",
+    "charconv": "cpp",
+    "chrono": "cpp",
+    "optional": "cpp",
+    "ratio": "cpp",
+    "system_error": "cpp",
+    "functional": "cpp",
+    "tuple": "cpp",
+    "type_traits": "cpp",
+    "utility": "cpp"
   }
 }

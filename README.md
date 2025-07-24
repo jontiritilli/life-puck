@@ -44,10 +44,13 @@ The case was built by someone else, but you can find the design files here: [Gam
 1. **Install PlatformIO:** [https://platformio.org/install](https://platformio.org/install)
 2. **Connect your ESP32-S3 board** via USB.
 3. **Build and upload:**
+
    ```sh
    pio run -t upload
    ```
+
 4. **Open the serial monitor:**
+
    ```sh
    pio device monitor -b 115200
    ```

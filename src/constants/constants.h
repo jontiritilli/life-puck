@@ -49,3 +49,4 @@ enum ContextualQuadrant
 #define KEY_LIFE "life"
 #define KEY_PLAYER_MODE "player_mode"
 #define KEY_BRIGHTNESS "brightness"
+#define AMP_MODE "amp_mode"
