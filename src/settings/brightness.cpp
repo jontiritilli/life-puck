@@ -59,6 +59,12 @@ static void brightness_down_event_handler(lv_event_t *e)
 void renderBrightnessOverlay()
 {
   extern lv_obj_t *brightness_control;
+
+  if (brightness_control)
+  {
+    lv_obj_del(brightness_control);
+    brightness_control = nullptr;
+  }
   brightness_control = lv_obj_create(lv_scr_act());
   lv_obj_set_size(brightness_control, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_set_style_bg_color(brightness_control, BLACK_COLOR, LV_PART_MAIN);

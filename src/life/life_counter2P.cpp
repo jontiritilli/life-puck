@@ -195,7 +195,7 @@ void init_life_counter_2P()
     lv_anim_set_var(&anim1, NULL);
     lv_anim_set_exec_cb(&anim1, arc_sweep_anim_cb_p1);
     lv_anim_set_values(&anim1, 0, max_life);
-    lv_anim_set_time(&anim1, 2000);
+    lv_anim_set_time(&anim1, 1500);
     lv_anim_set_delay(&anim1, 0);
     lv_anim_set_ready_cb(&anim1, arc_sweep_anim_ready_cb);
     lv_anim_start(&anim1);
@@ -212,7 +212,7 @@ void init_life_counter_2P()
     lv_anim_set_var(&anim2, NULL);
     lv_anim_set_exec_cb(&anim2, arc_sweep_anim_cb_p2);
     lv_anim_set_values(&anim2, 0, max_life);
-    lv_anim_set_time(&anim2, 2000);
+    lv_anim_set_time(&anim2, 1500);
     lv_anim_set_delay(&anim2, 0);
     lv_anim_set_ready_cb(&anim2, arc_sweep_anim_ready_cb);
     lv_anim_start(&anim2);

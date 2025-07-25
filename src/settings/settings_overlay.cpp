@@ -4,6 +4,8 @@
 #include "menu/menu.h"
 #include <lvgl.h>
 #include <state/state_store.h>
+#include <life/life_counter.h>
+#include <helpers/animation_helpers.h>
 
 // Use a static callback instead of a lambda
 static void btn_life_event_cb(lv_event_t *e)
@@ -15,6 +17,11 @@ static void btn_life_event_cb(lv_event_t *e)
 void renderSettingsOverlay()
 {
   extern lv_obj_t *settings_menu;
+  if (settings_menu)
+  {
+    lv_obj_del(settings_menu);
+    settings_menu = nullptr;
+  }
   settings_menu = lv_obj_create(lv_scr_act());
   lv_obj_set_size(settings_menu, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_set_style_bg_color(settings_menu, BLACK_COLOR, LV_PART_MAIN); // dark background
@@ -27,7 +34,7 @@ void renderSettingsOverlay()
   // Define grid: 9 rows, 1 column
   // Center the layout by using a single column and adjusting alignment
   static lv_coord_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-  static lv_coord_t row_dsc[] = {80, 40, 40, 40, 40, 40, 40, LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+  static lv_coord_t row_dsc[] = {80, 40, 40, 40, 40, LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
   lv_obj_set_grid_dsc_array(settings_menu, col_dsc, row_dsc);
   lv_obj_set_layout(settings_menu, LV_LAYOUT_GRID);
   lv_obj_set_scrollbar_mode(settings_menu, LV_SCROLLBAR_MODE_OFF); // Disable scrollbar
@@ -87,12 +94,16 @@ void renderSettingsOverlay()
     extern lv_obj_t *amp_button;
     if (amp_button && !new_mode)
     {
+      // Clear amp state if amp mode is turned off
+      clear_amp();
       // hide the amp button if it exists
       lv_obj_add_flag(amp_button, LV_OBJ_FLAG_HIDDEN);
     } else if (amp_button && new_mode)
     {
       // show the amp button if it exists
+      lv_obj_set_style_opa(amp_button, LV_OPA_TRANSP, 0); // Start fully transparent
       lv_obj_clear_flag(amp_button, LV_OBJ_FLAG_HIDDEN);
+      fade_in_obj(amp_button, 1000, 0, NULL); // Animate to visible
     } }, LV_EVENT_CLICKED, NULL);
 
   // Battery

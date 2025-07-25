@@ -79,6 +79,7 @@ static void resetActiveCounter()
   if (player_mode == 1)
   {
     reset_life();
+    clear_amp();
   }
   else if (player_mode == 2)
   {

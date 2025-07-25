@@ -17,8 +17,8 @@ static lv_obj_t *life_label = nullptr;
 static lv_obj_t *grouped_change_label = nullptr;
 static lv_obj_t *lbl_amp_label = nullptr;
 static int max_life = player_store.getLife(LIFE_STD_START);
-static int amp_mode = player_store.getInt(AMP_MODE, 0);
 static int amp_value = 0;
+static int peak_amp = 8;
 
 EventGrouper event_grouper(1000, max_life, 0); // Single player mode
 
@@ -43,6 +43,7 @@ void init_life_counter()
 {
   is_initializing = true; // Set flag to indicate initialization is active
 
+  int amp_mode = player_store.getInt(AMP_MODE, 0);
   // Clean up previous objects if switching modes
   if (life_arc)
   {
@@ -106,7 +107,7 @@ void init_life_counter()
   if (!amp_button)
   {
     amp_button = lv_btn_create(lv_scr_act());
-    lv_obj_set_size(amp_button, 100, 100);
+    lv_obj_set_size(amp_button, 120, 120);
     lv_obj_set_style_radius(amp_button, LV_RADIUS_CIRCLE, LV_PART_MAIN);
     lv_obj_set_style_bg_color(amp_button, YELLOW_COLOR, 0);
     static bool amp_long_press = false;
@@ -126,17 +127,19 @@ void init_life_counter()
     lv_obj_set_style_text_color(lbl_amp_label, BLACK_COLOR, 0);
     lv_obj_set_style_text_font(lbl_amp_label, &lv_font_montserrat_32, 0);
     lv_obj_center(lbl_amp_label);
-    lv_obj_align_to(amp_button, life_label, LV_ALIGN_RIGHT_MID, 135, 0);
+    lv_obj_align_to(amp_button, life_label, LV_ALIGN_RIGHT_MID, 146, 0);
     if (amp_mode)
     {
-      lv_obj_clear_flag(amp_button, LV_OBJ_FLAG_HIDDEN);
+      // Ensure the button is fully transparent and hidden before fade-in
+      lv_obj_set_style_opa(amp_button, LV_OPA_TRANSP, 0); // Fully transparent
+      lv_obj_clear_flag(amp_button, LV_OBJ_FLAG_HIDDEN);  // Unhide while still transparent
+      fade_in_obj(amp_button, 1500, 500, NULL);           // Animate to visible
     }
     else
     {
       lv_obj_add_flag(amp_button, LV_OBJ_FLAG_HIDDEN);
     }
   }
-
   // Show arc and animate sweep while fading in the life label in parallel
   if (life_arc)
   {
@@ -148,7 +151,7 @@ void init_life_counter()
     lv_anim_set_var(&anim, NULL);
     lv_anim_set_exec_cb(&anim, arc_sweep_anim_cb);
     lv_anim_set_values(&anim, 0, max_life);
-    lv_anim_set_time(&anim, 2000);
+    lv_anim_set_time(&anim, 1500);
     lv_anim_set_delay(&anim, 0);
     lv_anim_set_ready_cb(&anim, arc_sweep_anim_ready_cb);
     printf("[show_life_counter] Starting arc sweep animation\n");
@@ -166,8 +169,13 @@ void increment_amp()
   snprintf(buf, sizeof(buf), "+%d", amp_value);
   if (amp_button && lbl_amp_label)
   {
-    printf("[increment_amp] Current amp value: %d\n", amp_value);
     lv_label_set_text(lbl_amp_label, buf);
+    // the closer amp gets to peak_amp, the more red it becomes
+    uint8_t t = (uint8_t)(((amp_value > peak_amp ? peak_amp : amp_value) * 255) / peak_amp); // Scale t from 0 to 255
+    if (t > 255)
+      t = 255; // Clamp to max 255
+    lv_color_t amp_color = interpolate_color(YELLOW_COLOR, RED_COLOR, t);
+    lv_obj_set_style_bg_color(amp_button, amp_color, 0);
   }
 }
 void clear_amp()
@@ -178,6 +186,7 @@ void clear_amp()
   if (amp_button && lbl_amp_label)
   {
     lv_label_set_text(lbl_amp_label, buf);
+    lv_obj_set_style_bg_color(amp_button, YELLOW_COLOR, 0);
   }
 }
 

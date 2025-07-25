@@ -36,6 +36,11 @@ void renderStartLifeScreen()
   int stored_life = player_store.getLife(LIFE_STD_START);
 
   extern lv_obj_t *start_life_menu;
+  if (start_life_menu)
+  {
+    lv_obj_del(start_life_menu);
+    start_life_menu = nullptr;
+  }
   start_life_menu = lv_obj_create(lv_scr_act());
   lv_obj_set_size(start_life_menu, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_set_style_bg_color(start_life_menu, BLACK_COLOR, LV_PART_MAIN); // dark background

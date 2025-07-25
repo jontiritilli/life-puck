@@ -27,6 +27,12 @@ void renderHistoryOverlay()
   }
 
   extern lv_obj_t *history_menu;
+  // Clean up previous history_menu if it exists to prevent memory leaks
+  if (history_menu)
+  {
+    lv_obj_del(history_menu);
+    history_menu = nullptr;
+  }
   history_menu = lv_obj_create(lv_scr_act());
   lv_obj_set_size(history_menu, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_set_style_bg_color(history_menu, BLACK_COLOR, LV_PART_MAIN);
@@ -37,12 +43,17 @@ void renderHistoryOverlay()
   lv_obj_set_scrollbar_mode(history_menu, LV_SCROLLBAR_MODE_OFF);
   lv_obj_remove_flag(history_menu, LV_OBJ_FLAG_SCROLLABLE); // Disable scrolling
 
-  // Back button
+  static lv_coord_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+  static lv_coord_t row_dsc[] = {45, SCREEN_HEIGHT - 130, LV_GRID_TEMPLATE_LAST};
+  lv_obj_set_grid_dsc_array(history_menu, col_dsc, row_dsc);
+
+  // Back button (row 0)
   lv_obj_t *btn_back = lv_btn_create(history_menu);
   lv_obj_set_size(btn_back, 80, 40);
   lv_obj_set_style_bg_color(btn_back, lv_color_white(), LV_PART_MAIN);
   lv_obj_set_style_border_width(btn_back, 2, LV_PART_MAIN);
-  lv_obj_align(btn_back, LV_ALIGN_TOP_MID, 0, 5);
+  lv_obj_set_grid_cell(btn_back, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_START, 0, 1);
+
   lv_obj_t *lbl_back = lv_label_create(btn_back);
   lv_label_set_text(lbl_back, LV_SYMBOL_LEFT " Back");
   lv_obj_set_style_text_font(lbl_back, &lv_font_montserrat_16, 0);
@@ -52,13 +63,14 @@ void renderHistoryOverlay()
                       { renderMenu(MENU_CONTEXTUAL); }, LV_EVENT_CLICKED, NULL);
   // Table
   lv_obj_t *table = lv_table_create(history_menu);
-  lv_obj_set_size(table, SCREEN_WIDTH, SCREEN_HEIGHT - 120);
-  lv_obj_align(table, LV_ALIGN_TOP_MID, 0, 60);
+  // Place table in col 0, row 1, spanning 1 col and 1 row, stretched to fill cell
+  lv_obj_set_grid_cell(table, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_STRETCH, 1, 1);
   lv_obj_set_style_radius(table, LV_RADIUS_CIRCLE, LV_PART_MAIN);
   lv_obj_set_style_border_opa(table, LV_OPA_TRANSP, LV_PART_MAIN);
   lv_obj_set_style_outline_opa(table, LV_OPA_TRANSP, LV_PART_MAIN);
   lv_obj_set_style_bg_color(table, lv_color_black(), LV_PART_MAIN);
   lv_obj_set_style_bg_opa(table, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_set_scroll_dir(table, LV_DIR_VER);
   if (player_mode == 1)
   {
     lv_table_set_col_cnt(table, 1);
@@ -75,7 +87,7 @@ void renderHistoryOverlay()
     lv_table_set_cell_value(table, 0, 0, "P1");
     lv_table_set_cell_value(table, 0, 1, "P2");
   }
-  lv_obj_set_style_text_font(table, &lv_font_montserrat_20, LV_PART_ITEMS | LV_STATE_DEFAULT); // Header font
+  lv_obj_set_style_text_font(table, &lv_font_montserrat_18, LV_PART_ITEMS | LV_STATE_DEFAULT); // Header font
 
   // Custom draw event for styling
   auto draw_event_cb = [](lv_event_t *e)
@@ -122,7 +134,6 @@ void renderHistoryOverlay()
   lv_obj_add_flag(table, LV_OBJ_FLAG_SEND_DRAW_TASK_EVENTS);
 
   // Build table rows
-  int row = 1;
   for (size_t i = 0; i < history.size(); ++i)
   {
     const LifeHistoryEvent &evt = history[i];
@@ -130,6 +141,7 @@ void renderHistoryOverlay()
     int life_change = evt.net_life_change;
     int life_total = evt.life_total;
     char buf[64] = "";
+    size_t row_idx = i + 1; // row 0 is header
     if (player_mode == 1 && evt.player_id == 0)
     {
       // Single player mode, only one column
@@ -139,36 +151,23 @@ void renderHistoryOverlay()
         snprintf(buf, sizeof(buf), "%d @ %lum [%d]", life_change, (unsigned long)minutes_since_boot, life_total);
       else
         snprintf(buf, sizeof(buf), "0 @ %lum [%d]", (unsigned long)minutes_since_boot, life_total);
-      lv_table_set_row_cnt(table, row + 1);
-      lv_table_set_cell_value(table, row, 0, buf);
+      lv_table_set_row_cnt(table, row_idx + 1);
+      lv_table_set_cell_value(table, row_idx, 0, buf);
     }
-    else if (player_mode != 1)
+    else
     {
       // Two player mode, two columns
       char p1_buf[64] = "";
       char p2_buf[64] = "";
-      if (evt.player_id == 1)
-      {
-        if (life_change > 0)
-          snprintf(p1_buf, sizeof(p1_buf), "+%d @ %lum [%d]", life_change, (unsigned long)minutes_since_boot, life_total);
-        else if (life_change < 0)
-          snprintf(p1_buf, sizeof(p1_buf), "%d @ %lum [%d]", life_change, (unsigned long)minutes_since_boot, life_total);
-        else
-          snprintf(p1_buf, sizeof(p1_buf), "0 @ %lum [%d]", (unsigned long)minutes_since_boot, life_total);
-      }
-      if (evt.player_id == 2)
-      {
-        if (life_change > 0)
-          snprintf(p2_buf, sizeof(p2_buf), "+%d @ %lum [%d]", life_change, (unsigned long)minutes_since_boot, life_total);
-        else if (life_change < 0)
-          snprintf(p2_buf, sizeof(p2_buf), "%d @ %lum [%d]", life_change, (unsigned long)minutes_since_boot, life_total);
-        else
-          snprintf(p2_buf, sizeof(p2_buf), "0 @ %lum [%d]", (unsigned long)minutes_since_boot, life_total);
-      }
-      lv_table_set_row_cnt(table, row + 1);
-      lv_table_set_cell_value(table, row, 0, p1_buf);
-      lv_table_set_cell_value(table, row, 1, p2_buf);
+      if (life_change > 0)
+        snprintf(evt.player_id == 1 ? p1_buf : p2_buf, sizeof(p1_buf), "+%d @ %lum [%d]", life_change, (unsigned long)minutes_since_boot, life_total);
+      else if (life_change < 0)
+        snprintf(evt.player_id == 1 ? p1_buf : p2_buf, sizeof(p1_buf), "%d @ %lum [%d]", life_change, (unsigned long)minutes_since_boot, life_total);
+      else
+        snprintf(evt.player_id == 1 ? p1_buf : p2_buf, sizeof(p1_buf), "0 @ %lum [%d]", (unsigned long)minutes_since_boot, life_total);
+      lv_table_set_row_cnt(table, row_idx + 1);
+      lv_table_set_cell_value(table, row_idx, 0, p1_buf);
+      lv_table_set_cell_value(table, row_idx, 1, p2_buf);
     }
-    row++;
   }
 }

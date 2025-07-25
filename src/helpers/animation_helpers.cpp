@@ -21,11 +21,18 @@ void fade_in_obj(lv_obj_t *obj, uint32_t duration, uint32_t delay, lv_anim_ready
     lv_anim_set_exec_cb(&anim, text_fade_anim_cb);
     lv_obj_set_style_text_opa(obj, LV_OPA_TRANSP, 0);
   }
-  else
+  else if (lv_obj_check_type(obj, &lv_arc_class))
   {
     lv_anim_set_exec_cb(&anim, [](void *arc_obj, int32_t opa)
                         { lv_obj_set_style_arc_opa((lv_obj_t *)arc_obj, opa, LV_PART_INDICATOR); });
     lv_obj_set_style_arc_opa(obj, LV_OPA_TRANSP, LV_PART_INDICATOR);
+  }
+  else
+  {
+    // For buttons and general objects, animate LV_STYLE_OPA on LV_PART_MAIN
+    lv_anim_set_exec_cb(&anim, [](void *o, int32_t opa)
+                        { lv_obj_set_style_opa((lv_obj_t *)o, opa, LV_PART_MAIN); });
+    lv_obj_set_style_opa(obj, LV_OPA_TRANSP, LV_PART_MAIN);
   }
   lv_anim_set_values(&anim, LV_OPA_TRANSP, LV_OPA_COVER);
   lv_anim_set_time(&anim, duration);
@@ -46,11 +53,18 @@ void fade_out_obj(lv_obj_t *obj, uint32_t duration, uint32_t delay, lv_anim_read
     lv_anim_set_exec_cb(&anim, text_fade_anim_cb);
     lv_obj_set_style_text_opa(obj, LV_OPA_COVER, 0);
   }
-  else
+  else if (lv_obj_check_type(obj, &lv_arc_class))
   {
     lv_anim_set_exec_cb(&anim, [](void *arc_obj, int32_t opa)
                         { lv_obj_set_style_arc_opa((lv_obj_t *)arc_obj, opa, LV_PART_INDICATOR); });
     lv_obj_set_style_arc_opa(obj, LV_OPA_COVER, LV_PART_INDICATOR);
+  }
+  else
+  {
+    // For buttons and general objects, animate LV_STYLE_OPA on LV_PART_MAIN
+    lv_anim_set_exec_cb(&anim, [](void *o, int32_t opa)
+                        { lv_obj_set_style_opa((lv_obj_t *)o, opa, LV_PART_MAIN); });
+    lv_obj_set_style_opa(obj, LV_OPA_COVER, LV_PART_MAIN);
   }
   lv_anim_set_values(&anim, LV_OPA_COVER, LV_OPA_TRANSP);
   lv_anim_set_time(&anim, duration);
