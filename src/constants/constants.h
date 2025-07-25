@@ -4,7 +4,7 @@
 #define SCREEN_WIDTH 360 // Default, or set dynamically at runtime
 #define SCREEN_HEIGHT 360
 #define SCREEN_DIAMETER SCREEN_WIDTH
-#define ARC_WIDTH 5
+#define ARC_WIDTH 8
 #define LIFE_STD_START 40
 
 typedef struct
