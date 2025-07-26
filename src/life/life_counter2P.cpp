@@ -300,24 +300,26 @@ static void arc_sweep_anim_cb_p2(void *var, int32_t v)
 static void arc_sweep_anim_ready_cb(lv_anim_t *a)
 {
   is_initializing_2p = false;
+  int step_small = player_store.getInt(KEY_LIFE_STEP_SMALL, 1); // Default to 1
+  int step_large = player_store.getInt(KEY_LIFE_STEP_LARGE, 5); // Default to 5
   // Register gesture callbacks for tap and swipe, consistent with 1P mode
-  register_gesture_callback(GestureType::TapTopLeft, []()
-                            { increment_life(PLAYER_ONE, 1); });
-  register_gesture_callback(GestureType::TapBottomLeft, []()
-                            { decrement_life(PLAYER_ONE, 1); });
-  register_gesture_callback(GestureType::SwipeUpLeft, []()
-                            { increment_life(PLAYER_ONE, 5); });
-  register_gesture_callback(GestureType::SwipeDownLeft, []()
-                            { decrement_life(PLAYER_ONE, 5); });
-  register_gesture_callback(GestureType::TapTopRight, []()
-                            { increment_life(PLAYER_TWO, 1); });
-  register_gesture_callback(GestureType::TapBottomRight, []()
-                            { decrement_life(PLAYER_TWO, 1); });
-  register_gesture_callback(GestureType::SwipeUpRight, []()
-                            { increment_life(PLAYER_TWO, 5); });
-  register_gesture_callback(GestureType::SwipeDownRight, []()
-                            { decrement_life(PLAYER_TWO, 5); });
-  register_gesture_callback(GestureType::LongPressMenu, []()
+  register_gesture_callback(GestureType::TapTopLeft, [step_small]()
+                            { increment_life(PLAYER_ONE, step_small); });
+  register_gesture_callback(GestureType::TapBottomLeft, [step_small]()
+                            { decrement_life(PLAYER_ONE, step_small); });
+  register_gesture_callback(GestureType::LongPressTopLeft, [step_large]()
+                            { increment_life(PLAYER_ONE, step_large); });
+  register_gesture_callback(GestureType::LongPressBottomLeft, [step_large]()
+                            { decrement_life(PLAYER_ONE, step_large); });
+  register_gesture_callback(GestureType::TapTopRight, [step_small]()
+                            { increment_life(PLAYER_TWO, step_small); });
+  register_gesture_callback(GestureType::TapBottomRight, [step_small]()
+                            { decrement_life(PLAYER_TWO, step_small); });
+  register_gesture_callback(GestureType::LongPressTopRight, [step_large]()
+                            { increment_life(PLAYER_TWO, step_large); });
+  register_gesture_callback(GestureType::LongPressBottomRight, [step_large]()
+                            { decrement_life(PLAYER_TWO, step_large); });
+  register_gesture_callback(GestureType::SwipeDown, []()
                             { renderMenu(MENU_CONTEXTUAL); });
 }
 

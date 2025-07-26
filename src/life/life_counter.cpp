@@ -254,15 +254,15 @@ static void arc_sweep_anim_ready_cb(lv_anim_t *a)
   int step_large = player_store.getInt(KEY_LIFE_STEP_LARGE, 5); // Default to 5
 
   is_initializing = false;
-  register_gesture_callback(GestureType::TapTop, []()
-                            { increment_life(1); });
-  register_gesture_callback(GestureType::TapBottom, []()
-                            { decrement_life(1); });
-  register_gesture_callback(GestureType::SwipeUp, []()
-                            { increment_life(5); });
+  register_gesture_callback(GestureType::TapTop, [step_small]()
+                            { increment_life(step_small); });
+  register_gesture_callback(GestureType::TapBottom, [step_small]()
+                            { decrement_life(step_small); });
+  register_gesture_callback(GestureType::LongPressTop, [step_large]()
+                            { increment_life(step_large); });
+  register_gesture_callback(GestureType::LongPressBottom, [step_large]()
+                            { decrement_life(step_large); });
   register_gesture_callback(GestureType::SwipeDown, []()
-                            { decrement_life(5); });
-  register_gesture_callback(GestureType::LongPressMenu, []()
                             { renderMenu(MENU_CONTEXTUAL); });
 }
 
