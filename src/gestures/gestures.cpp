@@ -33,8 +33,9 @@ void trigger_gesture(GestureType gesture)
 // Example LVGL event handler for tap/swipe (to be wired to touch events)
 void lvgl_gesture_event_handler(lv_event_t *e)
 {
-  // Track if a swipe was detected in this touch sequence
+  // Track if a swipe or long press was detected in this touch sequence
   static bool swipe_detected = false;
+  static bool long_press_active = false;
   lv_obj_t *obj = (lv_obj_t *)lv_event_get_target(e);
   lv_event_code_t code = lv_event_get_code(e);
   lv_point_t point = {0, 0};
@@ -48,36 +49,19 @@ void lvgl_gesture_event_handler(lv_event_t *e)
   if (code == LV_EVENT_PRESSED)
   {
     swipe_detected = false;
+    long_press_active = false;
   }
   else if (code == LV_EVENT_GESTURE)
   {
     lv_dir_t dir = lv_indev_get_gesture_dir(indev);
     if (dir == LV_DIR_TOP)
     {
-      // Quadrant-specific swipe up
-      if (point.x < SCREEN_WIDTH / 2)
-      {
-        trigger_gesture(GestureType::SwipeUpLeft);
-      }
-      else
-      {
-        trigger_gesture(GestureType::SwipeUpRight);
-      }
       // Generic swipe up
       trigger_gesture(GestureType::SwipeUp);
       swipe_detected = true;
     }
     else if (dir == LV_DIR_BOTTOM)
     {
-      // Quadrant-specific swipe down
-      if (point.x < SCREEN_WIDTH / 2)
-      {
-        trigger_gesture(GestureType::SwipeDownLeft);
-      }
-      else
-      {
-        trigger_gesture(GestureType::SwipeDownRight);
-      }
       // Generic swipe down
       trigger_gesture(GestureType::SwipeDown);
       swipe_detected = true;
@@ -85,6 +69,12 @@ void lvgl_gesture_event_handler(lv_event_t *e)
   }
   else if (code == LV_EVENT_CLICKED)
   {
+    if (long_press_active)
+    {
+      // Ignore click after long press
+      long_press_active = false;
+      return;
+    }
     if (!swipe_detected)
     {
       if (point.y < SCREEN_HEIGHT / 2)
@@ -115,7 +105,32 @@ void lvgl_gesture_event_handler(lv_event_t *e)
   }
   else if (code == LV_EVENT_LONG_PRESSED)
   {
-    trigger_gesture(GestureType::LongPressMenu);
+    long_press_active = true;
+    // Determine if long press is in top or bottom half
+    if (point.y < SCREEN_HEIGHT / 2)
+    {
+      if (point.x < SCREEN_WIDTH / 2)
+      {
+        trigger_gesture(GestureType::LongPressTopLeft);
+      }
+      else
+      {
+        trigger_gesture(GestureType::LongPressTopRight);
+      }
+      trigger_gesture(GestureType::LongPressTop);
+    }
+    else
+    {
+      if (point.x < SCREEN_WIDTH / 2)
+      {
+        trigger_gesture(GestureType::LongPressBottomLeft);
+      }
+      else
+      {
+        trigger_gesture(GestureType::LongPressBottomRight);
+      }
+      trigger_gesture(GestureType::LongPressBottom);
+    }
   }
 }
 
@@ -145,6 +160,7 @@ void handle_menu_quadrant(int x, int y)
 void init_gesture_handling(lv_obj_t *root_obj)
 {
   lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_ALL, NULL);
+  lv_indev_set_long_press_time(lv_indev_get_act(), 500);
 }
 
 // Clear all registered gesture callbacks
