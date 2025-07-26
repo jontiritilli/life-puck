@@ -21,7 +21,7 @@ extern esp_panel::board::Board *board;
 // Global menu objects
 lv_obj_t *contextual_menu = nullptr;
 lv_obj_t *settings_menu = nullptr;
-lv_obj_t *start_life_menu = nullptr;
+lv_obj_t *life_config_menu = nullptr;
 lv_obj_t *history_menu = nullptr;
 lv_obj_t *brightness_control = nullptr;
 int circle_diameter = SCREEN_WIDTH;
@@ -197,8 +197,8 @@ void renderMenu(MenuState menuType)
   case MENU_SETTINGS:
     renderSettingsOverlay();
     break;
-  case MENU_START_LIFE:
-    renderStartLifeScreen();
+  case MENU_LIFE_CONFIG:
+    renderLifeConfigScreen();
     break;
   case MENU_HISTORY:
     renderHistoryOverlay();

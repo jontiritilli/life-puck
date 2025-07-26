@@ -12,7 +12,7 @@ extern lv_obj_t *settings_menu;
 // Use a static callback instead of a lambda
 static void btn_life_event_cb(lv_event_t *e)
 {
-  renderMenu(MENU_START_LIFE);
+  renderMenu(MENU_LIFE_CONFIG);
 }
 
 // Draw settings overlay using LVGL

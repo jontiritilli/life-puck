@@ -3,7 +3,7 @@
 #include <menu/menu.h>
 #include "state/state_store.h"
 
-extern lv_obj_t *start_life_menu;
+extern lv_obj_t *life_config_menu;
 
 struct SaveBtnData
 {
@@ -33,29 +33,29 @@ static void save_btn_event_cb(lv_event_t *e)
   renderMenu(MENU_SETTINGS);
 }
 
-void renderStartLifeScreen()
+void renderLifeConfigScreen()
 {
   teardownStartLifeScreen();
   int stored_life = player_store.getInt(KEY_LIFE_MAX, DEFAULT_LIFE_MAX);
 
   // Create the main menu object
-  start_life_menu = lv_obj_create(lv_scr_act());
-  lv_obj_set_size(start_life_menu, SCREEN_WIDTH, SCREEN_HEIGHT);
-  lv_obj_set_style_bg_color(start_life_menu, BLACK_COLOR, LV_PART_MAIN); // dark background
-  lv_obj_set_style_bg_opa(start_life_menu, LV_OPA_COVER, LV_PART_MAIN);
-  lv_obj_set_style_border_opa(start_life_menu, LV_OPA_TRANSP, LV_PART_MAIN);
-  lv_obj_set_style_outline_opa(start_life_menu, LV_OPA_TRANSP, LV_PART_MAIN);
-  lv_obj_set_style_radius(start_life_menu, LV_RADIUS_CIRCLE, LV_PART_MAIN);
-  lv_obj_set_style_pad_all(start_life_menu, 16, LV_PART_MAIN);
+  life_config_menu = lv_obj_create(lv_scr_act());
+  lv_obj_set_size(life_config_menu, SCREEN_WIDTH, SCREEN_HEIGHT);
+  lv_obj_set_style_bg_color(life_config_menu, BLACK_COLOR, LV_PART_MAIN); // dark background
+  lv_obj_set_style_bg_opa(life_config_menu, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_set_style_border_opa(life_config_menu, LV_OPA_TRANSP, LV_PART_MAIN);
+  lv_obj_set_style_outline_opa(life_config_menu, LV_OPA_TRANSP, LV_PART_MAIN);
+  lv_obj_set_style_radius(life_config_menu, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+  lv_obj_set_style_pad_all(life_config_menu, 16, LV_PART_MAIN);
 
   // Define grid: 5 rows, 1 column
   static lv_coord_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
   static lv_coord_t row_dsc[] = {60, 60, 60, 40, LV_GRID_TEMPLATE_LAST};
-  lv_obj_set_grid_dsc_array(start_life_menu, col_dsc, row_dsc);
-  lv_obj_set_layout(start_life_menu, LV_LAYOUT_GRID);
+  lv_obj_set_grid_dsc_array(life_config_menu, col_dsc, row_dsc);
+  lv_obj_set_layout(life_config_menu, LV_LAYOUT_GRID);
 
   // Back button
-  lv_obj_t *btn_back = lv_btn_create(start_life_menu);
+  lv_obj_t *btn_back = lv_btn_create(life_config_menu);
   lv_obj_set_size(btn_back, 100, 60);
   lv_obj_set_style_bg_color(btn_back, lv_color_white(), LV_PART_MAIN);
   lv_obj_set_grid_cell(btn_back, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_START, 0, 1);
@@ -68,7 +68,7 @@ void renderStartLifeScreen()
                       { renderMenu(MENU_SETTINGS); }, LV_EVENT_CLICKED, NULL);
 
   // Current value label
-  lv_obj_t *lbl_current = lv_label_create(start_life_menu);
+  lv_obj_t *lbl_current = lv_label_create(life_config_menu);
   char buf[16];
   snprintf(buf, sizeof(buf), "%d", stored_life);
   lv_label_set_text(lbl_current, buf);
@@ -77,7 +77,7 @@ void renderStartLifeScreen()
   lv_obj_set_grid_cell(lbl_current, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 1, 1);
 
   // Slider
-  lv_obj_t *slider = lv_slider_create(start_life_menu);
+  lv_obj_t *slider = lv_slider_create(life_config_menu);
   lv_slider_set_range(slider, 0, DEFAULT_LIFE_MAX);
   lv_slider_set_value(slider, stored_life, LV_ANIM_OFF);
   lv_obj_set_width(slider, LV_HOR_RES - 100);
@@ -89,7 +89,7 @@ void renderStartLifeScreen()
   lv_obj_set_grid_cell(slider, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 2, 1);
 
   // Save button
-  lv_obj_t *btn_save = lv_btn_create(start_life_menu);
+  lv_obj_t *btn_save = lv_btn_create(life_config_menu);
   lv_obj_set_size(btn_save, 80, 40);
   lv_obj_set_grid_cell(btn_save, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 3, 1);
   lv_obj_t *lbl_save = lv_label_create(btn_save);
@@ -103,9 +103,9 @@ void renderStartLifeScreen()
 
 void teardownStartLifeScreen()
 {
-  if (start_life_menu)
+  if (life_config_menu)
   {
-    lv_obj_del(start_life_menu);
-    start_life_menu = nullptr;
+    lv_obj_del(life_config_menu);
+    life_config_menu = nullptr;
   }
 }

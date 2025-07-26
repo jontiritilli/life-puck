@@ -1,4 +1,4 @@
 #pragma once
 
-void renderStartLifeScreen();
+void renderLifeConfigScreen();
 void teardownStartLifeScreen();
