@@ -16,10 +16,10 @@ struct ChangeData
 
 int brightness = player_store.getInt(KEY_BRIGHTNESS, 100); // Default to 100% if not set
 
-static void set_brightness(int value)
+static void set_brightness()
 {
-  player_store.putInt(KEY_BRIGHTNESS, value);
-  bool success = board->getBacklight()->setBrightness(value);
+  player_store.putInt(KEY_BRIGHTNESS, brightness);
+  bool success = board->getBacklight()->setBrightness(brightness);
   if (!success)
   {
     printf("Failed to set brightness\n");
@@ -35,7 +35,7 @@ static void brightness_up_event_handler(lv_event_t *e)
     char buf[8];
     snprintf(buf, sizeof(buf), "%d", brightness);
     lv_label_set_text(value_label, buf);
-    set_brightness(brightness);
+    set_brightness();
   }
   // Optionally update UI here
 }
@@ -49,7 +49,7 @@ static void brightness_down_event_handler(lv_event_t *e)
     char buf[8];
     snprintf(buf, sizeof(buf), "%d", brightness);
     lv_label_set_text(value_label, buf);
-    set_brightness(brightness);
+    set_brightness();
   }
   // Optionally update UI here
 }
