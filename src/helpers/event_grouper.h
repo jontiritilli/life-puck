@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <functional>
 #include <Arduino.h>
-#include <string>
 
 struct LifeHistoryEvent
 {
@@ -37,13 +36,13 @@ public:
   // Returns the current pending net change (0 if inactive)
   int getPendingChange() const
   {
-    printf("[EventGrouper] getPendingChange: active=%d, net_change=%d\n", active, net_change);
+    printf("[EventGrouper] getPendingChange: active=%d, net_change=%d\n, player_id=%d", active, net_change, player_id);
     return net_change;
   }
 
   int getLifeTotal() const
   {
-    printf("[EventGrouper] getLifeTotal: life_total=%d\n", life_total);
+    printf("[EventGrouper] getLifeTotal: life_total=%d\n, player_id=%d", life_total, player_id);
     return life_total;
   }
 
@@ -67,12 +66,10 @@ public:
   {
     uint32_t now = millis(); // MS since boot
     bool isWindowExpired = (now - last_event_time) > grouping_window;
-    if ((now - last_event_time) % 50 == 0)
-    {
-      printf("[EventGrouper] update: active=%d, net_change=%d, now=%u, last_event_time=%u, grouping_window=%u, delta=%u\n, isWindowExpired=%d", active, net_change, now, last_event_time, grouping_window, now - last_event_time, isWindowExpired);
-    }
     if (active && isWindowExpired && net_change != 0)
     {
+      printf("[EventGrouper] update: active=%d, net_change=%d, now=%u, last_event_time=%u, grouping_window=%u, delta=%u\n", active, net_change, now, last_event_time, grouping_window, now - last_event_time);
+
       printf("[EventGrouper] update: committing due to rolling window timeout\n");
       int new_life_total = life_total + net_change;
       LifeHistoryEvent evt{net_change, new_life_total, player_id, last_event_time};

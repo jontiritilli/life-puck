@@ -6,6 +6,7 @@
 #include <esp_display_panel.hpp>
 
 extern esp_panel::board::Board *board;
+extern lv_obj_t *brightness_control;
 
 struct ChangeData
 {
@@ -14,9 +15,6 @@ struct ChangeData
 };
 
 int brightness = player_store.getInt(KEY_BRIGHTNESS, 100); // Default to 100% if not set
-// Grid layout constants
-static const lv_coord_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-static const lv_coord_t row_dsc[] = {80, 40, 40, LV_GRID_TEMPLATE_LAST}; // row
 
 static void set_brightness(int value)
 {
@@ -56,31 +54,42 @@ static void brightness_down_event_handler(lv_event_t *e)
   // Optionally update UI here
 }
 
-void renderBrightnessOverlay()
+void teardownBrightnessOverlay()
 {
-  extern lv_obj_t *brightness_control;
-
   if (brightness_control)
   {
     lv_obj_del(brightness_control);
     brightness_control = nullptr;
   }
+}
+
+void renderBrightnessOverlay()
+{
+
+  teardownBrightnessOverlay();
   brightness_control = lv_obj_create(lv_scr_act());
   lv_obj_set_size(brightness_control, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_set_style_bg_color(brightness_control, BLACK_COLOR, LV_PART_MAIN);
   lv_obj_set_style_bg_opa(brightness_control, LV_OPA_COVER, LV_PART_MAIN);
   lv_obj_set_style_radius(brightness_control, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+  lv_obj_set_style_border_opa(brightness_control, LV_OPA_TRANSP, LV_PART_MAIN);
+  lv_obj_set_style_outline_opa(brightness_control, LV_OPA_TRANSP, LV_PART_MAIN);
+  lv_obj_set_style_pad_all(brightness_control, 16, LV_PART_MAIN);
+
+  // Define grid: 3 columns, 3 rows
+  static lv_coord_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+  static lv_coord_t row_dsc[] = {60, 40, 40, LV_GRID_TEMPLATE_LAST}; // row
   lv_obj_set_grid_dsc_array(brightness_control, col_dsc, row_dsc);
   lv_obj_set_layout(brightness_control, LV_LAYOUT_GRID);
 
   // Add back button
   lv_obj_t *btn_back = lv_btn_create(brightness_control);
-  lv_obj_set_size(btn_back, 80, 40);
+  lv_obj_set_size(btn_back, 100, 60);
   lv_obj_set_style_bg_color(btn_back, lv_color_white(), LV_PART_MAIN);
   lv_obj_set_grid_cell(btn_back, LV_GRID_ALIGN_CENTER, 0, 3, LV_GRID_ALIGN_START, 0, 1);
   lv_obj_t *lbl_back = lv_label_create(btn_back);
   lv_label_set_text(lbl_back, LV_SYMBOL_LEFT " Back");
-  lv_obj_set_style_text_font(lbl_back, &lv_font_montserrat_16, 0);
+  lv_obj_set_style_text_font(lbl_back, &lv_font_montserrat_20, 0);
   lv_obj_center(lbl_back);
   lv_obj_set_style_text_color(lbl_back, lv_color_black(), 0);
   lv_obj_add_event_cb(btn_back, [](lv_event_t *e)

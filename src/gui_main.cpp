@@ -16,6 +16,10 @@
 
 void ui_init(void)
 {
+  teardown_life_counter_2P();
+  teardown_life_counter();
+  teardownAllMenus();
+
   // Now load the screen (all objects are hidden/transparent)
   printf("[lv_create_main_gui] Loading screen\n");
   lv_scr_load(lv_obj_create(NULL));

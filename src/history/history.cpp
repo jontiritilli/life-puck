@@ -6,8 +6,11 @@
 #include <life/life_counter.h>
 #include <life/life_counter2P.h>
 
+extern lv_obj_t *history_menu;
+
 void renderHistoryOverlay()
 {
+  teardownHistoryOverlay(); // Clean up previous overlay if it exists
   int player_mode = player_store.getInt(KEY_PLAYER_MODE, 0);
   std::vector<LifeHistoryEvent> history;
   if (player_mode == 1)
@@ -26,7 +29,6 @@ void renderHistoryOverlay()
               { return a.timestamp < b.timestamp; });
   }
 
-  extern lv_obj_t *history_menu;
   // Clean up previous history_menu if it exists to prevent memory leaks
   if (history_menu)
   {
@@ -44,19 +46,19 @@ void renderHistoryOverlay()
   lv_obj_remove_flag(history_menu, LV_OBJ_FLAG_SCROLLABLE); // Disable scrolling
 
   static lv_coord_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-  static lv_coord_t row_dsc[] = {45, SCREEN_HEIGHT - 130, LV_GRID_TEMPLATE_LAST};
+  static lv_coord_t row_dsc[] = {60, SCREEN_HEIGHT - 120, LV_GRID_TEMPLATE_LAST};
   lv_obj_set_grid_dsc_array(history_menu, col_dsc, row_dsc);
 
   // Back button (row 0)
   lv_obj_t *btn_back = lv_btn_create(history_menu);
-  lv_obj_set_size(btn_back, 80, 40);
+  lv_obj_set_size(btn_back, 100, 60);
   lv_obj_set_style_bg_color(btn_back, lv_color_white(), LV_PART_MAIN);
   lv_obj_set_style_border_width(btn_back, 2, LV_PART_MAIN);
   lv_obj_set_grid_cell(btn_back, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_START, 0, 1);
 
   lv_obj_t *lbl_back = lv_label_create(btn_back);
   lv_label_set_text(lbl_back, LV_SYMBOL_LEFT " Back");
-  lv_obj_set_style_text_font(lbl_back, &lv_font_montserrat_16, 0);
+  lv_obj_set_style_text_font(lbl_back, &lv_font_montserrat_20, 0);
   lv_obj_center(lbl_back);
   lv_obj_set_style_text_color(lbl_back, lv_color_black(), 0);
   lv_obj_add_event_cb(btn_back, [](lv_event_t *e)
@@ -169,5 +171,14 @@ void renderHistoryOverlay()
       lv_table_set_cell_value(table, row_idx, 0, p1_buf);
       lv_table_set_cell_value(table, row_idx, 1, p2_buf);
     }
+  }
+}
+
+void teardownHistoryOverlay()
+{
+  if (history_menu)
+  {
+    lv_obj_del(history_menu);
+    history_menu = nullptr;
   }
 }

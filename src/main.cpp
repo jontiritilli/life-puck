@@ -3,7 +3,6 @@
 #include "ArduinoNvs.h"
 #include "gui_main.h"
 #include <esp_display_panel.hpp>
-#include <string.h>
 #include "power_key/power_key.h"
 #include "constants/constants.h"
 #include "battery/battery_state.h"

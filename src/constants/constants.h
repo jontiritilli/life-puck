@@ -5,7 +5,6 @@
 #define SCREEN_HEIGHT 360
 #define SCREEN_DIAMETER SCREEN_WIDTH
 #define ARC_WIDTH 8
-#define LIFE_STD_START 40
 
 typedef struct
 {
@@ -13,6 +12,12 @@ typedef struct
   int end_angle;
   lv_color_t color;
 } arc_segment_t;
+
+// Grouper constants
+#define PLAYER_SINGLE 0
+#define PLAYER_ONE 1
+#define PLAYER_TWO 2
+#define GROUPER_WINDOW 1500
 
 // Enum for menu states
 enum MenuState
@@ -39,6 +44,7 @@ enum ContextualQuadrant
 #define GREEN_COLOR lv_color_hex(0x00e31f)
 #define YELLOW_COLOR lv_color_hex(0xebf700)
 #define RED_COLOR lv_color_hex(0xe80000)
+#define LIGHTNING_BLUE_COLOR lv_color_hex(0x0070ff) // lightning blue
 #define WHITE_COLOR lv_color_hex(0xffffff)
 #define BLACK_COLOR lv_color_hex(0x000000)
 #define GRAY_COLOR lv_color_hex(0x808080)
@@ -46,7 +52,13 @@ enum ContextualQuadrant
 
 // Constants for StateStore
 #define PLAYER_STORE "player_store"
-#define KEY_LIFE "life"
+#define KEY_LIFE_MAX "life"
 #define KEY_PLAYER_MODE "player_mode"
 #define KEY_BRIGHTNESS "brightness"
-#define AMP_MODE "amp_mode"
+#define KEY_AMP_MODE "amp_mode"
+#define KEY_LIFE_STEP_SMALL "life_step_small"
+#define KEY_LIFE_STEP_LARGE "life_step_large"
+// define for life increment levels small and large
+#define DEFAULT_LIFE_INCREMENT_SMALL 1
+#define DEFAULT_LIFE_INCREMENT_LARGE 5
+#define DEFAULT_LIFE_MAX 40

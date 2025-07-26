@@ -6,6 +6,7 @@ void init_life_counter();
 void reset_life();
 void clear_amp();
 void life_counter_loop();
+void teardown_life_counter();
 
 // Extern so we can access from main.cpp
 extern EventGrouper event_grouper;

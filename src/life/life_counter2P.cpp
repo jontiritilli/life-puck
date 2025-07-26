@@ -17,7 +17,7 @@ static lv_obj_t *life_label_p1 = nullptr;
 static lv_obj_t *life_label_p2 = nullptr;
 static lv_obj_t *center_line = nullptr;
 
-static int max_life = player_store.getLife(LIFE_STD_START);
+static int max_life = player_store.getInt(KEY_LIFE_MAX, DEFAULT_LIFE_MAX);
 
 // --- Forward Declarations ---
 void update_life_label(int player, int value);
@@ -35,8 +35,8 @@ void queue_life_change_2p(int player, int value);
 static bool gesture_active = false;
 
 // Event grouping for 2P mode
-EventGrouper event_grouper_p1(1000, max_life, 1);
-EventGrouper event_grouper_p2(1000, max_life, 2);
+EventGrouper event_grouper_p1(GROUPER_WINDOW, max_life, PLAYER_ONE);
+EventGrouper event_grouper_p2(GROUPER_WINDOW, max_life, PLAYER_TWO);
 
 // Define grouped_change_label and is_initializing for 2P context
 static lv_obj_t *grouped_change_label_p1 = nullptr;
@@ -46,43 +46,8 @@ static bool is_initializing_2p = false;
 // Call this after boot animation to show the two-player life counter
 void init_life_counter_2P()
 {
-  is_initializing_2p = true; // Set flag to indicate initialization is active
-  // Clean up previous objects before creating new ones
-  if (life_arc_p1)
-  {
-    lv_obj_del(life_arc_p1);
-    life_arc_p1 = nullptr;
-  }
-  if (life_arc_p2)
-  {
-    lv_obj_del(life_arc_p2);
-    life_arc_p2 = nullptr;
-  }
-  if (life_label_p1)
-  {
-    lv_obj_del(life_label_p1);
-    life_label_p1 = nullptr;
-  }
-  if (life_label_p2)
-  {
-    lv_obj_del(life_label_p2);
-    life_label_p2 = nullptr;
-  }
-  if (grouped_change_label_p1)
-  {
-    lv_obj_del(grouped_change_label_p1);
-    grouped_change_label_p1 = nullptr;
-  }
-  if (grouped_change_label_p2)
-  {
-    lv_obj_del(grouped_change_label_p2);
-    grouped_change_label_p2 = nullptr;
-  }
-  if (center_line)
-  {
-    lv_obj_del(center_line);
-    center_line = nullptr;
-  }
+  is_initializing_2p = true;  // Set flag to indicate initialization is active
+  teardown_life_counter_2P(); // Clean up any previous state
 
   if (!center_line)
   {
@@ -114,7 +79,7 @@ void init_life_counter_2P()
     lv_obj_set_style_arc_opa(life_arc_p1, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_arc_width(life_arc_p1, 0, LV_PART_MAIN);
     lv_obj_set_style_arc_width(life_arc_p1, ARC_WIDTH, LV_PART_INDICATOR);
-    lv_obj_set_style_arc_rounded(life_arc_p1, 0, LV_PART_INDICATOR);
+    // lv_obj_set_style_arc_rounded(life_arc_p1, 0, LV_PART_INDICATOR);
     lv_obj_remove_style(life_arc_p1, NULL, LV_PART_KNOB);
     lv_obj_clear_flag(life_arc_p1, LV_OBJ_FLAG_CLICKABLE);
   }
@@ -125,7 +90,7 @@ void init_life_counter_2P()
     life_label_p1 = lv_label_create(lv_scr_act());
     lv_obj_add_flag(life_label_p1, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(life_label_p1, "0");
-    lv_obj_set_style_text_font(life_label_p1, &lv_font_montserrat_64, 0);
+    lv_obj_set_style_text_font(life_label_p1, &lv_font_montserrat_72, 0);
     lv_obj_set_style_text_color(life_label_p1, lv_color_white(), 0);
     lv_obj_align(life_label_p1, LV_ALIGN_CENTER, -SCREEN_DIAMETER / 4, 0);
     lv_obj_set_style_text_opa(life_label_p1, LV_OPA_TRANSP, 0);
@@ -155,7 +120,7 @@ void init_life_counter_2P()
     life_label_p2 = lv_label_create(lv_scr_act());
     lv_obj_add_flag(life_label_p2, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(life_label_p2, "0");
-    lv_obj_set_style_text_font(life_label_p2, &lv_font_montserrat_64, 0);
+    lv_obj_set_style_text_font(life_label_p2, &lv_font_montserrat_72, 0);
     lv_obj_set_style_text_color(life_label_p2, lv_color_white(), 0);
     lv_obj_align(life_label_p2, LV_ALIGN_CENTER, SCREEN_DIAMETER / 4, 0);
   }
@@ -167,9 +132,9 @@ void init_life_counter_2P()
     grouped_change_label_p1 = lv_label_create(lv_scr_act());
     lv_obj_add_flag(grouped_change_label_p1, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(grouped_change_label_p1, "0");
-    lv_obj_set_style_text_font(grouped_change_label_p1, &lv_font_montserrat_32, 0);
+    lv_obj_set_style_text_font(grouped_change_label_p1, &lv_font_montserrat_40, 0);
     lv_obj_set_style_text_color(grouped_change_label_p1, lv_color_white(), 0);
-    lv_obj_align_to(grouped_change_label_p1, life_label_p1, LV_ALIGN_OUT_TOP_MID, 0, -10);
+    lv_obj_align_to(grouped_change_label_p1, life_label_p1, LV_ALIGN_OUT_TOP_MID, -10, -10);
   }
 
   if (!grouped_change_label_p2 && life_label_p2)
@@ -178,9 +143,9 @@ void init_life_counter_2P()
     grouped_change_label_p2 = lv_label_create(lv_scr_act());
     lv_obj_add_flag(grouped_change_label_p2, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(grouped_change_label_p2, "0");
-    lv_obj_set_style_text_font(grouped_change_label_p2, &lv_font_montserrat_32, 0);
+    lv_obj_set_style_text_font(grouped_change_label_p2, &lv_font_montserrat_40, 0);
     lv_obj_set_style_text_color(grouped_change_label_p2, lv_color_white(), 0);
-    lv_obj_align_to(grouped_change_label_p2, life_label_p2, LV_ALIGN_OUT_TOP_MID, 0, -10);
+    lv_obj_align_to(grouped_change_label_p2, life_label_p2, LV_ALIGN_OUT_TOP_MID, -10, -10);
   }
 
   if (life_arc_p1)
@@ -234,6 +199,50 @@ void increment_life(int player, int value)
 void decrement_life(int player, int value)
 {
   queue_life_change_2p(player, -value);
+}
+
+void teardown_life_counter_2P()
+{
+  printf("[tearDownLifeCounter2P] Clearing life counter objects\n");
+  event_grouper_p1.resetHistory(max_life);
+  event_grouper_p2.resetHistory(max_life);
+  clear_gesture_callbacks(); // Clear any previous gesture callbacks
+  // Clean up previous objects before creating new ones
+  if (life_arc_p1)
+  {
+    lv_obj_del(life_arc_p1);
+    life_arc_p1 = nullptr;
+  }
+  if (life_arc_p2)
+  {
+    lv_obj_del(life_arc_p2);
+    life_arc_p2 = nullptr;
+  }
+  if (life_label_p1)
+  {
+    lv_obj_del(life_label_p1);
+    life_label_p1 = nullptr;
+  }
+  if (life_label_p2)
+  {
+    lv_obj_del(life_label_p2);
+    life_label_p2 = nullptr;
+  }
+  if (grouped_change_label_p1)
+  {
+    lv_obj_del(grouped_change_label_p1);
+    grouped_change_label_p1 = nullptr;
+  }
+  if (grouped_change_label_p2)
+  {
+    lv_obj_del(grouped_change_label_p2);
+    grouped_change_label_p2 = nullptr;
+  }
+  if (center_line)
+  {
+    lv_obj_del(center_line);
+    center_line = nullptr;
+  }
 }
 
 // Reset life total for Player 1
@@ -291,25 +300,23 @@ static void arc_sweep_anim_cb_p2(void *var, int32_t v)
 static void arc_sweep_anim_ready_cb(lv_anim_t *a)
 {
   is_initializing_2p = false;
-
-  clear_gesture_callbacks(); // Clear any previous gesture callbacks
   // Register gesture callbacks for tap and swipe, consistent with 1P mode
   register_gesture_callback(GestureType::TapTopLeft, []()
-                            { increment_life(1, 1); });
+                            { increment_life(PLAYER_ONE, 1); });
   register_gesture_callback(GestureType::TapBottomLeft, []()
-                            { decrement_life(1, 1); });
+                            { decrement_life(PLAYER_ONE, 1); });
   register_gesture_callback(GestureType::SwipeUpLeft, []()
-                            { increment_life(1, 5); });
+                            { increment_life(PLAYER_ONE, 5); });
   register_gesture_callback(GestureType::SwipeDownLeft, []()
-                            { decrement_life(1, 5); });
+                            { decrement_life(PLAYER_ONE, 5); });
   register_gesture_callback(GestureType::TapTopRight, []()
-                            { increment_life(2, 1); });
+                            { increment_life(PLAYER_TWO, 1); });
   register_gesture_callback(GestureType::TapBottomRight, []()
-                            { decrement_life(2, 1); });
+                            { decrement_life(PLAYER_TWO, 1); });
   register_gesture_callback(GestureType::SwipeUpRight, []()
-                            { increment_life(2, 5); });
+                            { increment_life(PLAYER_TWO, 5); });
   register_gesture_callback(GestureType::SwipeDownRight, []()
-                            { decrement_life(2, 5); });
+                            { decrement_life(PLAYER_TWO, 5); });
   register_gesture_callback(GestureType::LongPressMenu, []()
                             { renderMenu(MENU_CONTEXTUAL); });
 }
@@ -402,14 +409,14 @@ void update_life_label(int player, int new_life_total)
   lv_obj_t *life_label = (player == 1) ? life_label_p1 : life_label_p2;
   lv_obj_t *life_arc = (player == 1) ? life_arc_p1 : life_arc_p2;
 
-  if (life_label)
+  if (life_label != nullptr)
   {
     char buf[8];
     snprintf(buf, sizeof(buf), "%d", new_life_total);
     lv_label_set_text(life_label, buf);
   }
 
-  if (life_arc)
+  if (life_arc != nullptr)
   {
     arc_segment_t seg = (player == 1) ? life_to_arc_p1(new_life_total) : life_to_arc_p2(new_life_total);
     lv_arc_set_angles(life_arc, seg.start_angle, seg.end_angle);
@@ -457,7 +464,7 @@ void queue_life_change_2p(int player, int value)
 {
   EventGrouper *grouper = (player == 1) ? &event_grouper_p1 : &event_grouper_p2;
   lv_obj_t *grouped_change_label = (player == 1) ? grouped_change_label_p1 : grouped_change_label_p2;
-  if (grouped_change_label && !is_initializing_2p)
+  if (grouped_change_label != nullptr && !is_initializing_2p)
   {
     // Show the pending change BEFORE the grouper updates its state
     int pending_change = grouper->getPendingChange() + value;
@@ -474,23 +481,27 @@ void queue_life_change_2p(int player, int value)
     lv_label_set_text(grouped_change_label, buf);
     lv_obj_clear_flag(grouped_change_label, LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_style_text_opa(grouped_change_label, LV_OPA_COVER, 0);
-    fade_out_obj(grouped_change_label, 100, 1000, [](lv_anim_t *fade_out_anim)
+    fade_out_obj(grouped_change_label, 100, GROUPER_WINDOW, [](lv_anim_t *fade_out_anim)
                  {
-        if (fade_out_anim && fade_out_anim->var) {
-          lv_obj_add_flag((lv_obj_t *)fade_out_anim->var, LV_OBJ_FLAG_HIDDEN);
-        } });
+      if (fade_out_anim && fade_out_anim->var) {
+        lv_obj_add_flag((lv_obj_t *)fade_out_anim->var, LV_OBJ_FLAG_HIDDEN);
+      } });
+  }
+  else if (grouped_change_label == nullptr && !is_initializing_2p)
+  {
+    printf("[queue_life_change_2p] grouped_change_label is NULL for player %d!\n", player);
   }
   grouper->handleChange(player, value, [player](const LifeHistoryEvent &evt)
                         {
-                          printf("[queue_life_change_2p] Player %d life change committed: %d\n", player, evt.life_total);
-                          // Hide grouped change label after commit
-                          lv_obj_t *grouped_change_label = (player == 1) ? grouped_change_label_p1 : grouped_change_label_p2;
-                          if (is_initializing_2p) {
-                            printf("[queue_life_change_2p] Skipping update_life_label during initialization.\n");
-                            return;
-                          }
-                          if (player == 1)
-                            update_life_label(1, evt.life_total);
-                          else
-                            update_life_label(2, evt.life_total); });
+    printf("[queue_life_change_2p] Player %d life change committed: %d\n", player, evt.life_total);
+    // Hide grouped change label after commit
+    lv_obj_t *grouped_change_label = (player == 1) ? grouped_change_label_p1 : grouped_change_label_p2;
+    if (is_initializing_2p) {
+      printf("[queue_life_change_2p] Skipping update_life_label during initialization.\n");
+      return;
+    }
+    if (player == 1)
+      update_life_label(1, evt.life_total);
+    else
+      update_life_label(2, evt.life_total); });
 }

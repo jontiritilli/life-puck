@@ -33,8 +33,8 @@ static void resetActiveCounter();
 static void showHistoryOverlay();
 static void showLifeScreen();
 static void hideLifeScreen();
+void teardownContextualMenuOverlay();
 static bool is_in_center_cancel_area(lv_event_t *e);
-void clearMenus();
 void renderMenu(MenuState menuType);
 bool is_in_quadrant(lv_event_t *e, int angle_start, int angle_end);
 
@@ -74,8 +74,6 @@ static void togglePlayerMode()
 static void resetActiveCounter()
 {
   int player_mode = player_store.getInt(KEY_PLAYER_MODE, 1);
-  if (player_mode != 1 && player_mode != 2)
-    player_mode = 1;
   if (player_mode == 1)
   {
     reset_life();
@@ -89,36 +87,7 @@ static void resetActiveCounter()
   printf("[resetActiveCounter] Reset life counter and history for player mode %d\n", player_mode);
 
   showLifeScreen();
-  clearMenus();
-}
-
-void clearMenus()
-{
-  if (contextual_menu)
-  {
-    lv_obj_del(contextual_menu);
-    contextual_menu = nullptr;
-  }
-  if (settings_menu)
-  {
-    lv_obj_del(settings_menu);
-    settings_menu = nullptr;
-  }
-  if (start_life_menu)
-  {
-    lv_obj_del(start_life_menu);
-    start_life_menu = nullptr;
-  }
-  if (history_menu)
-  {
-    lv_obj_del(history_menu);
-    history_menu = nullptr;
-  }
-  if (brightness_control)
-  {
-    lv_obj_del(brightness_control);
-    brightness_control = nullptr;
-  }
+  teardownAllMenus();
 }
 
 static void contextual_btn_event_cb(lv_event_t *e)
@@ -130,11 +99,13 @@ static void contextual_btn_event_cb(lv_event_t *e)
 // Draw contextual menu overlay with 4 quadrants using LVGL
 void renderContextualMenuOverlay()
 {
+  teardownContextualMenuOverlay();
   // Make the overlay a true circle, centered on the screen
   int circle_diameter = (SCREEN_WIDTH < SCREEN_HEIGHT ? SCREEN_WIDTH : SCREEN_HEIGHT); // Increase size by 5 pixels
   int circle_radius = circle_diameter / 2;
   int circle_x = (SCREEN_WIDTH - circle_diameter) / 2;  // Center the circle horizontally
   int circle_y = (SCREEN_HEIGHT - circle_diameter) / 2; // Center the circle vertically
+
   contextual_menu = lv_obj_create(lv_scr_act());
   lv_obj_set_size(contextual_menu, circle_diameter, circle_diameter);
   lv_obj_set_style_bg_color(contextual_menu, lv_color_black(), LV_PART_MAIN);
@@ -158,8 +129,8 @@ void renderContextualMenuOverlay()
   lv_obj_align(lbl_tl, LV_ALIGN_CENTER, -ring_radius / 2, -ring_radius / 2);
 
   lv_obj_t *lbl_tr = lv_label_create(contextual_menu);
-  String lbl_text = player_store.getInt(KEY_PLAYER_MODE, 0) == 1 ? "2P" : "1P";
-  lv_label_set_text(lbl_tr, lbl_text.c_str());
+  const char *lbl_text = player_store.getInt(KEY_PLAYER_MODE, 0) == 1 ? "2P" : "1P";
+  lv_label_set_text(lbl_tr, lbl_text);
   lv_obj_set_style_text_font(lbl_tr, &lv_font_montserrat_30, 0);
   lv_obj_align(lbl_tr, LV_ALIGN_CENTER, ring_radius / 2, -ring_radius / 2);
 
@@ -216,7 +187,7 @@ void renderContextualMenuOverlay()
 // Update renderMenu to use LVGL overlays
 void renderMenu(MenuState menuType)
 {
-  clearMenus();
+  teardownAllMenus();
   hideLifeScreen();
   switch (menuType)
   {
@@ -299,4 +270,22 @@ void showLifeScreen()
     lv_obj_clear_flag(life_arc_p1, LV_OBJ_FLAG_HIDDEN);
   if (life_arc_p2)
     lv_obj_clear_flag(life_arc_p2, LV_OBJ_FLAG_HIDDEN);
+}
+
+void teardownAllMenus()
+{
+  teardownContextualMenuOverlay();
+  teardownSettingsOverlay();
+  teardownStartLifeScreen();
+  teardownHistoryOverlay();
+  teardownBrightnessOverlay();
+}
+
+void teardownContextualMenuOverlay()
+{
+  if (contextual_menu)
+  {
+    lv_obj_del(contextual_menu);
+    contextual_menu = nullptr;
+  }
 }
