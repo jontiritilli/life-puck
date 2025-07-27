@@ -470,6 +470,11 @@ void queue_life_change_2p(int player, int value)
   {
     // Show the pending change BEFORE the grouper updates its state
     int pending_change = grouper->getPendingChange() + value;
+    int current_life = grouper->getLifeTotal();
+    if (player == 1)
+      update_life_label(1, (current_life + pending_change));
+    else
+      update_life_label(2, (current_life + pending_change));
     char buf[8];
     if (pending_change > 0)
     {
@@ -493,17 +498,5 @@ void queue_life_change_2p(int player, int value)
   {
     printf("[queue_life_change_2p] grouped_change_label is NULL for player %d!\n", player);
   }
-  grouper->handleChange(player, value, [player](const LifeHistoryEvent &evt)
-                        {
-    printf("[queue_life_change_2p] Player %d life change committed: %d\n", player, evt.life_total);
-    // Hide grouped change label after commit
-    lv_obj_t *grouped_change_label = (player == 1) ? grouped_change_label_p1 : grouped_change_label_p2;
-    if (is_initializing_2p) {
-      printf("[queue_life_change_2p] Skipping update_life_label during initialization.\n");
-      return;
-    }
-    if (player == 1)
-      update_life_label(1, evt.life_total);
-    else
-      update_life_label(2, evt.life_total); });
+  grouper->handleChange(player, value, NULL);
 }

@@ -46,7 +46,7 @@ void renderHistoryOverlay()
   lv_obj_remove_flag(history_menu, LV_OBJ_FLAG_SCROLLABLE); // Disable scrolling
 
   static lv_coord_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-  static lv_coord_t row_dsc[] = {60, SCREEN_HEIGHT - 120, LV_GRID_TEMPLATE_LAST};
+  static lv_coord_t row_dsc[] = {60, SCREEN_HEIGHT - 140, LV_GRID_TEMPLATE_LAST};
   lv_obj_set_grid_dsc_array(history_menu, col_dsc, row_dsc);
 
   // Back button (row 0)

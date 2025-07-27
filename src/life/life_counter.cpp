@@ -406,6 +406,8 @@ void queue_life_change(int player, int value)
   if (grouped_change_label != nullptr && !is_initializing)
   {
     int pending_change = event_grouper.getPendingChange() + value;
+    int current_life = event_grouper.getLifeTotal();
+    update_life_label((current_life + pending_change));
     char buf[8];
     if (pending_change > 0)
     {
@@ -427,11 +429,7 @@ void queue_life_change(int player, int value)
       if (fade_out_anim && fade_out_anim->var) {
         lv_obj_add_flag((lv_obj_t *)fade_out_anim->var, LV_OBJ_FLAG_HIDDEN);
       } });
-    event_grouper.handleChange(player, value, [](const LifeHistoryEvent &evt)
-                               {
-      printf("[queue_life_change] Player %d life change committed: %d\n", evt.player_id, evt.life_total);
-      // Double-check label and arc are valid before updating
-      update_life_label(evt.life_total); });
+    event_grouper.handleChange(player, value, NULL);
   }
   else if (grouped_change_label == nullptr && !is_initializing)
   {

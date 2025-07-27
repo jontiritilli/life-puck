@@ -103,6 +103,17 @@ void renderSettingsOverlay()
       fade_in_obj(amp_button, 1000, 0, NULL); // Animate to visible
     } }, LV_EVENT_CLICKED, NULL);
 
+  // Restart Device button
+  lv_obj_t *btn_restart = lv_btn_create(settings_menu);
+  lv_obj_set_size(btn_restart, 180, 40);
+  lv_obj_set_grid_cell(btn_restart, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 4, 1);
+  lv_obj_t *lbl_restart = lv_label_create(btn_restart);
+  lv_label_set_text(lbl_restart, "Restart Device");
+  lv_obj_set_style_text_font(lbl_restart, &lv_font_montserrat_20, 0);
+  lv_obj_center(lbl_restart);
+  lv_obj_add_event_cb(btn_restart, [](lv_event_t *e)
+                      { esp_restart(); }, LV_EVENT_CLICKED, NULL);
+
   // Battery
   lv_obj_t *lbl_batt = lv_label_create(settings_menu);
   float pct = battery_get_percent();
@@ -110,7 +121,7 @@ void renderSettingsOverlay()
   snprintf(batt_str, sizeof(batt_str), "Battery: %d%%", (int)(pct + 0.5f));
   lv_label_set_text(lbl_batt, batt_str);
   lv_obj_set_style_text_font(lbl_batt, &lv_font_montserrat_20, 0);
-  lv_obj_set_grid_cell(lbl_batt, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 4, 1);
+  lv_obj_set_grid_cell(lbl_batt, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 5, 1);
 }
 
 void teardownSettingsOverlay()
