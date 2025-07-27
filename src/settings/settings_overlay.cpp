@@ -47,7 +47,7 @@ void renderSettingsOverlay()
   lv_obj_center(lbl_back);
   lv_obj_set_style_text_color(lbl_back, lv_color_black(), 0);
   lv_obj_add_event_cb(btn_back, [](lv_event_t *e)
-                      { renderMenu(MENU_CONTEXTUAL); }, LV_EVENT_CLICKED, NULL);
+                      { renderMenu(MENU_CONTEXTUAL, false); }, LV_EVENT_CLICKED, NULL);
 
   // Start Life button
   lv_obj_t *btn_life = lv_btn_create(settings_menu);

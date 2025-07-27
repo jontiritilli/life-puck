@@ -60,6 +60,7 @@ void fall_asleep(void)
   printf("[fall_asleep] Enabling wakeup on PWR_KEY_Input_PIN, entering deep sleep\n");
   pinMode(PWR_KEY_Input_PIN, INPUT);
   board->getBacklight()->off(); // Manually turn off LCD backlight before sleep
+  digitalWrite(PWR_Control_PIN, LOW);
   esp_sleep_enable_ext0_wakeup((gpio_num_t)PWR_KEY_Input_PIN, HIGH);
   esp_deep_sleep_start();
 }

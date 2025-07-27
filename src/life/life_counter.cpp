@@ -88,7 +88,7 @@ void init_life_counter()
     amp_button = lv_btn_create(lv_scr_act());
     lv_obj_set_size(amp_button, 110, 110);
     lv_obj_set_style_radius(amp_button, LV_RADIUS_CIRCLE, LV_PART_MAIN);
-    lv_obj_set_style_bg_color(amp_button, LIGHTNING_BLUE_COLOR, 0);
+    lv_obj_set_style_bg_color(amp_button, AMP_START_COLOR, 0);
     static bool amp_long_press = false;
     lv_obj_add_event_cb(amp_button, [](lv_event_t *e)
                         { amp_long_press = false; }, LV_EVENT_PRESSED, NULL);
@@ -153,7 +153,7 @@ void increment_amp()
     uint8_t t = (uint8_t)(((amp_value > peak_amp ? peak_amp : amp_value) * 255) / peak_amp); // Scale t from 0 to 255
     if (t > 255)
       t = 255; // Clamp to max 255
-    lv_color_t amp_color = interpolate_color(LIGHTNING_BLUE_COLOR, RED_COLOR, t);
+    lv_color_t amp_color = interpolate_color(AMP_START_COLOR, AMP_END_COLOR, t);
     lv_obj_set_style_bg_color(amp_button, amp_color, 0);
   }
 }
@@ -165,7 +165,7 @@ void clear_amp()
   if (amp_button && lbl_amp_label)
   {
     lv_label_set_text(lbl_amp_label, buf);
-    lv_obj_set_style_bg_color(amp_button, LIGHTNING_BLUE_COLOR, 0);
+    lv_obj_set_style_bg_color(amp_button, AMP_START_COLOR, 0);
   }
 }
 
