@@ -11,11 +11,14 @@
 #include "constants/constants.h"
 
 // --- Two Player Life Counter GUI State ---
-lv_obj_t *life_arc_p1 = nullptr; // Now global for menu access
-lv_obj_t *life_arc_p2 = nullptr; // Now global for menu access
+lv_obj_t *life_counter_container_2p = nullptr; // Global for menu access
+static lv_obj_t *life_arc_p1 = nullptr;
+static lv_obj_t *life_arc_p2 = nullptr;
 static lv_obj_t *life_label_p1 = nullptr;
 static lv_obj_t *life_label_p2 = nullptr;
 static lv_obj_t *center_line = nullptr;
+// Persistent points for center line
+static lv_point_precise_t center_line_points[2];
 
 static int max_life = player_store.getInt(KEY_LIFE_MAX, DEFAULT_LIFE_MAX);
 
@@ -49,27 +52,26 @@ void init_life_counter_2P()
   is_initializing_2p = true;  // Set flag to indicate initialization is active
   teardown_life_counter_2P(); // Clean up any previous state
 
-  if (!center_line)
+  if (!life_counter_container_2p)
   {
-    printf("[init_life_counter_2P] Creating center_line\n");
-    // Add a thin yellow vertical line at the center of the screen
-    static lv_point_precise_t line_points[2];
-    line_points[0].x = SCREEN_WIDTH / 2;
-    line_points[0].y = 0 + 60;
-    line_points[1].x = SCREEN_WIDTH / 2;
-    line_points[1].y = SCREEN_HEIGHT - 60;
-    center_line = lv_line_create(lv_scr_act());
-    lv_line_set_points(center_line, line_points, 2);
-    lv_obj_set_style_line_color(center_line, WHITE_COLOR, 0);
-    lv_obj_set_style_line_width(center_line, 1, 0); // Very Thin line
-    lv_obj_set_style_line_opa(center_line, LV_OPA_COVER, 0);
-    lv_obj_set_style_line_rounded(center_line, 1, 0);
+    life_counter_container_2p = lv_obj_create(lv_scr_act());
+    lv_obj_set_size(life_counter_container_2p, SCREEN_WIDTH, SCREEN_HEIGHT);
+    lv_obj_align(life_counter_container_2p, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_style_radius(life_counter_container_2p, LV_RADIUS_CIRCLE, 0);
+    lv_obj_clear_flag(life_counter_container_2p, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(life_counter_container_2p, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_scrollbar_mode(life_counter_container_2p, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_style_bg_opa(life_counter_container_2p, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_opa(life_counter_container_2p, LV_OPA_TRANSP, 0);
+    // Remove all padding and border width to prevent offset
+    lv_obj_set_style_pad_all(life_counter_container_2p, 0, 0);
+    lv_obj_set_style_border_width(life_counter_container_2p, 0, 0);
   }
   if (!life_arc_p1)
   {
     printf("[init_life_counter_2P] Creating life_arc_p1\n");
     // Create arc/label for Player 1 (sweep left: 90° to 0°, centered)
-    life_arc_p1 = lv_arc_create(lv_scr_act());
+    life_arc_p1 = lv_arc_create(life_counter_container_2p);
     lv_obj_add_flag(life_arc_p1, LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_size(life_arc_p1, SCREEN_DIAMETER, SCREEN_DIAMETER);
     lv_obj_align(life_arc_p1, LV_ALIGN_CENTER, 0, 0);
@@ -87,7 +89,7 @@ void init_life_counter_2P()
   {
     printf("[init_life_counter_2P] Creating life_label_p1\n");
     // Create label for Player 1
-    life_label_p1 = lv_label_create(lv_scr_act());
+    life_label_p1 = lv_label_create(life_counter_container_2p);
     lv_obj_add_flag(life_label_p1, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(life_label_p1, "0");
     lv_obj_set_style_text_font(life_label_p1, &lv_font_montserrat_72, 0);
@@ -99,7 +101,7 @@ void init_life_counter_2P()
   {
     printf("[init_life_counter_2P] Creating life_arc_p2\n");
     // Create arc/label for Player 2 (sweep right: 90° to 180°, centered)
-    life_arc_p2 = lv_arc_create(lv_scr_act());
+    life_arc_p2 = lv_arc_create(life_counter_container_2p);
     lv_obj_add_flag(life_arc_p2, LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_size(life_arc_p2, SCREEN_DIAMETER, SCREEN_DIAMETER);
     lv_obj_align(life_arc_p2, LV_ALIGN_CENTER, 0, 0);
@@ -117,19 +119,20 @@ void init_life_counter_2P()
   if (!life_label_p2)
   {
     printf("[init_life_counter_2P] Creating life_label_p2\n");
-    life_label_p2 = lv_label_create(lv_scr_act());
+    life_label_p2 = lv_label_create(life_counter_container_2p);
     lv_obj_add_flag(life_label_p2, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(life_label_p2, "0");
     lv_obj_set_style_text_font(life_label_p2, &lv_font_montserrat_72, 0);
     lv_obj_set_style_text_color(life_label_p2, lv_color_white(), 0);
     lv_obj_align(life_label_p2, LV_ALIGN_CENTER, SCREEN_DIAMETER / 4, 0);
+    lv_obj_set_style_text_opa(life_label_p1, LV_OPA_TRANSP, 0);
   }
   // Add grouped change labels for Player 1 and Player 2
 
   if (!grouped_change_label_p1 && life_label_p1)
   {
     printf("[init_life_counter_2P] Creating grouped_change_label_p1\n");
-    grouped_change_label_p1 = lv_label_create(lv_scr_act());
+    grouped_change_label_p1 = lv_label_create(life_counter_container_2p);
     lv_obj_add_flag(grouped_change_label_p1, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(grouped_change_label_p1, "0");
     lv_obj_set_style_text_font(grouped_change_label_p1, &lv_font_montserrat_40, 0);
@@ -140,7 +143,7 @@ void init_life_counter_2P()
   if (!grouped_change_label_p2 && life_label_p2)
   {
     printf("[init_life_counter_2P] Creating grouped_change_label_p2\n");
-    grouped_change_label_p2 = lv_label_create(lv_scr_act());
+    grouped_change_label_p2 = lv_label_create(life_counter_container_2p);
     lv_obj_add_flag(grouped_change_label_p2, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(grouped_change_label_p2, "0");
     lv_obj_set_style_text_font(grouped_change_label_p2, &lv_font_montserrat_40, 0);
@@ -182,6 +185,24 @@ void init_life_counter_2P()
     lv_anim_set_ready_cb(&anim2, arc_sweep_anim_ready_cb);
     lv_anim_start(&anim2);
   }
+  // Now create the center line so it is drawn on top
+  if (!center_line)
+  {
+    printf("[init_life_counter_2P] Creating center_line (after arcs/labels)\n");
+    int cont_w = lv_obj_get_width(life_counter_container_2p);
+    int cont_h = lv_obj_get_height(life_counter_container_2p);
+    int x_center = cont_w / 2;
+    center_line_points[0].x = x_center;
+    center_line_points[0].y = 60;
+    center_line_points[1].x = x_center;
+    center_line_points[1].y = cont_h - 60;
+    center_line = lv_line_create(life_counter_container_2p);
+    lv_line_set_points(center_line, center_line_points, 2);
+    lv_obj_set_style_line_color(center_line, WHITE_COLOR, 0);
+    lv_obj_set_style_line_width(center_line, 1, 0); // Very Thin line
+    lv_obj_set_style_line_opa(center_line, LV_OPA_COVER, 0);
+    lv_obj_set_style_line_rounded(center_line, 1, 0);
+  }
   // Fade in the life labels
   lv_obj_clear_flag(life_label_p1, LV_OBJ_FLAG_HIDDEN);
   fade_in_obj(life_label_p1, 1000, 0, NULL);
@@ -208,40 +229,10 @@ void teardown_life_counter_2P()
   event_grouper_p2.resetHistory(max_life);
   clear_gesture_callbacks(); // Clear any previous gesture callbacks
   // Clean up previous objects before creating new ones
-  if (life_arc_p1)
+  if (life_counter_container_2p)
   {
-    lv_obj_del(life_arc_p1);
-    life_arc_p1 = nullptr;
-  }
-  if (life_arc_p2)
-  {
-    lv_obj_del(life_arc_p2);
-    life_arc_p2 = nullptr;
-  }
-  if (life_label_p1)
-  {
-    lv_obj_del(life_label_p1);
-    life_label_p1 = nullptr;
-  }
-  if (life_label_p2)
-  {
-    lv_obj_del(life_label_p2);
-    life_label_p2 = nullptr;
-  }
-  if (grouped_change_label_p1)
-  {
-    lv_obj_del(grouped_change_label_p1);
-    grouped_change_label_p1 = nullptr;
-  }
-  if (grouped_change_label_p2)
-  {
-    lv_obj_del(grouped_change_label_p2);
-    grouped_change_label_p2 = nullptr;
-  }
-  if (center_line)
-  {
-    lv_obj_del(center_line);
-    center_line = nullptr;
+    lv_obj_del(life_counter_container_2p);
+    life_counter_container_2p = nullptr;
   }
 }
 

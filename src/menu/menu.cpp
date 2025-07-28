@@ -264,27 +264,22 @@ bool is_in_quadrant(lv_event_t *e, int angle_start, int angle_end)
 }
 
 // Extern declarations for life counter objects
-extern lv_obj_t *life_arc;
-extern lv_obj_t *life_arc_p1;
-extern lv_obj_t *life_arc_p2;
+extern lv_obj_t *life_counter_container;
+extern lv_obj_t *life_counter_container_2p;
 
 void hideLifeScreen()
 {
-  if (life_arc)
-    lv_obj_add_flag(life_arc, LV_OBJ_FLAG_HIDDEN);
-  if (life_arc_p1)
-    lv_obj_add_flag(life_arc_p1, LV_OBJ_FLAG_HIDDEN);
-  if (life_arc_p2)
-    lv_obj_add_flag(life_arc_p2, LV_OBJ_FLAG_HIDDEN);
+  if (life_counter_container)
+    lv_obj_add_flag(life_counter_container, LV_OBJ_FLAG_HIDDEN);
+  if (life_counter_container_2p)
+    lv_obj_add_flag(life_counter_container_2p, LV_OBJ_FLAG_HIDDEN);
 }
 void showLifeScreen()
 {
-  if (life_arc)
-    lv_obj_clear_flag(life_arc, LV_OBJ_FLAG_HIDDEN);
-  if (life_arc_p1)
-    lv_obj_clear_flag(life_arc_p1, LV_OBJ_FLAG_HIDDEN);
-  if (life_arc_p2)
-    lv_obj_clear_flag(life_arc_p2, LV_OBJ_FLAG_HIDDEN);
+  if (life_counter_container)
+    lv_obj_clear_flag(life_counter_container, LV_OBJ_FLAG_HIDDEN);
+  if (life_counter_container_2p)
+    lv_obj_clear_flag(life_counter_container_2p, LV_OBJ_FLAG_HIDDEN);
 }
 
 void teardownAllMenus()
