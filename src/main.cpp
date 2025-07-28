@@ -37,7 +37,7 @@ void flush_cb(lv_display_t *display, const lv_area_t *area, uint8_t *px_map);
 void gui_task(void *pvParameters);
 
 // Global mode variable (should be updated by UI logic)
-int life_counter_mode = 1;
+PlayerMode life_counter_mode = PLAYER_MODE_SINGLE;
 
 void setup()
 {
@@ -59,11 +59,11 @@ void loop()
 {
   vTaskDelay(10 / portTICK_PERIOD_MS);
   power_loop();
-  if (life_counter_mode == 1)
+  if (life_counter_mode == PLAYER_MODE_SINGLE) // Single player mode
   {
     life_counter_loop();
   }
-  else if (life_counter_mode == 2)
+  else if (life_counter_mode == PLAYER_MODE_TWO_PLAYER) // Two player mode
   {
     life_counter2p_loop();
   }
