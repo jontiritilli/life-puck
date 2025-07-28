@@ -10,7 +10,7 @@
 
 extern esp_panel::board::Board *board;
 
-static uint8_t BAT_State = 0;
+static BatteryState BAT_State = BAT_OFF;
 // Device_State removed; only off/on supported
 static uint32_t button_press_start = 0;
 // Helper Functions
@@ -46,7 +46,7 @@ void wake_up(void)
   vTaskDelay(100);
   if (!digitalRead(PWR_KEY_Input_PIN))
   {
-    BAT_State = 1;
+    BAT_State = BAT_ON;
     digitalWrite(PWR_Control_PIN, HIGH);
     printf("[wake_up] Waking up device\n");
     esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
@@ -57,21 +57,39 @@ void wake_up(void)
 
 void fall_asleep(void)
 {
-  printf("[fall_asleep] Enabling wakeup on PWR_KEY_Input_PIN, entering deep sleep\n");
-  pinMode(PWR_KEY_Input_PIN, INPUT);
-  board->getBacklight()->off(); // Manually turn off LCD backlight before sleep
+  printf("[fall_asleep] Preparing for deep sleep\n");
+  // Power down display and touch
+  if (board && board->getBacklight())
+  {
+    board->getBacklight()->off();
+    printf("[fall_asleep] Backlight OFF\n");
+  }
   digitalWrite(PWR_Control_PIN, LOW);
+  printf("[fall_asleep] Display/touch power OFF\n");
+
+  // Disable internal pullups/pulldowns on wake pin to reduce leakage
+  pinMode(PWR_KEY_Input_PIN, INPUT);
+  gpio_pulldown_dis((gpio_num_t)PWR_KEY_Input_PIN);
+  gpio_pullup_dis((gpio_num_t)PWR_KEY_Input_PIN);
+  printf("[fall_asleep] Pullups/pulldowns disabled on wake pin\n");
+
+  // Enable wakeup on external pin
   esp_sleep_enable_ext0_wakeup((gpio_num_t)PWR_KEY_Input_PIN, HIGH);
+  printf("[fall_asleep] Wakeup enabled on pin %d\n", PWR_KEY_Input_PIN);
+
+  printf("[fall_asleep] Entering deep sleep NOW\n");
   esp_deep_sleep_start();
+  // If we ever return here, something is wrong
+  printf("[fall_asleep] ERROR: Returned from esp_deep_sleep_start! Device did NOT sleep.\n");
 }
 
 void power_loop(void)
 {
-  if (BAT_State)
+  if (BAT_State != BAT_OFF)
   {
     if (!digitalRead(PWR_KEY_Input_PIN))
     {
-      if (BAT_State == 2)
+      if (BAT_State == BAT_READY_FOR_SLEEP)
       {
         if (button_press_start == 0)
         {
@@ -87,8 +105,8 @@ void power_loop(void)
     }
     else
     {
-      if (BAT_State == 1)
-        BAT_State = 2;
+      if (BAT_State == BAT_ON)
+        BAT_State = BAT_READY_FOR_SLEEP;
       button_press_start = 0;
     }
   }
