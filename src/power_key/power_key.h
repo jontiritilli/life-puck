@@ -9,16 +9,21 @@
 #define Device_Sleep_Time 3 * 1000 // 3 seconds (assuming loop rate is 50Hz)
 
 // Button state enum for clarity
-// represents state of voltage on PWR_KEY_Input_PIN
-// 1 = button not pressed (HIGH), 0 = button pressed (LOW)
 enum ButtonState
 {
   BUTTON_NOT_PRESSED = 1,
   BUTTON_PRESSED = 0
 };
 
-void Fall_Asleep(void);
-void Toggle_Screen(void);
+// Battery state enum for power management
+enum BatteryState
+{
+  BAT_OFF = 0,
+  BAT_ON = 1,
+  BAT_READY_FOR_SLEEP = 2
+};
 
+void fall_asleep(void);
+void wake_up(void);
 void power_init(void);
 void power_loop(void);

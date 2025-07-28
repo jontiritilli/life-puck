@@ -61,10 +61,10 @@ void handleContextualSelection(ContextualQuadrant quadrant)
 static void togglePlayerMode()
 {
   // Toggle player mode (1P/2P)
-  PlayerMode current_mode = (PlayerMode)player_store.getInt(KEY_PLAYER_MODE, PLAYER_MODE_SINGLE);
-  if (current_mode != PLAYER_MODE_SINGLE && current_mode != PLAYER_MODE_TWO_PLAYER)
-    current_mode = PLAYER_MODE_SINGLE;
-  PlayerMode new_mode = (current_mode == PLAYER_MODE_SINGLE) ? PLAYER_MODE_TWO_PLAYER : PLAYER_MODE_SINGLE;
+  PlayerMode current_mode = (PlayerMode)player_store.getInt(KEY_PLAYER_MODE, PLAYER_MODE_ONE_PLAYER);
+  if (current_mode != PLAYER_MODE_ONE_PLAYER && current_mode != PLAYER_MODE_TWO_PLAYER)
+    current_mode = PLAYER_MODE_ONE_PLAYER;
+  PlayerMode new_mode = (current_mode == PLAYER_MODE_ONE_PLAYER) ? PLAYER_MODE_TWO_PLAYER : PLAYER_MODE_ONE_PLAYER;
   player_store.putInt(KEY_PLAYER_MODE, (int)new_mode);
   printf("[togglePlayerMode] Player mode toggled to %d\n", new_mode);
   // Rerender main GUI (life counter)
@@ -74,8 +74,8 @@ static void togglePlayerMode()
 
 static void resetActiveCounter()
 {
-  PlayerMode player_mode = (PlayerMode)player_store.getInt(KEY_PLAYER_MODE, PLAYER_MODE_SINGLE);
-  if (player_mode == PLAYER_MODE_SINGLE)
+  PlayerMode player_mode = (PlayerMode)player_store.getInt(KEY_PLAYER_MODE, PLAYER_MODE_ONE_PLAYER);
+  if (player_mode == PLAYER_MODE_ONE_PLAYER)
   {
     reset_life();
     clear_amp();
@@ -130,7 +130,7 @@ void renderContextualMenuOverlay(bool animate_menu)
   lv_obj_align(lbl_tl, LV_ALIGN_CENTER, -ring_radius / 2, -ring_radius / 2);
 
   lv_obj_t *lbl_tr = lv_label_create(contextual_menu);
-  const char *lbl_text = player_store.getInt(KEY_PLAYER_MODE, PLAYER_MODE_SINGLE) == PLAYER_MODE_TWO_PLAYER ? "2P" : "1P";
+  const char *lbl_text = player_store.getInt(KEY_PLAYER_MODE, PLAYER_MODE_ONE_PLAYER) == PLAYER_MODE_ONE_PLAYER ? "2P" : "1P";
   lv_label_set_text(lbl_tr, lbl_text);
   lv_obj_set_style_text_font(lbl_tr, &lv_font_montserrat_40, 0);
   lv_obj_align(lbl_tr, LV_ALIGN_CENTER, ring_radius / 2, -ring_radius / 2);

@@ -21,7 +21,7 @@ typedef struct
 
 enum PlayerMode
 {
-  PLAYER_MODE_SINGLE = 0,
+  PLAYER_MODE_ONE_PLAYER = 0,
   PLAYER_MODE_TWO_PLAYER = 1
 };
 
