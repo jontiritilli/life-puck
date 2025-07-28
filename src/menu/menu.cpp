@@ -15,6 +15,7 @@
 #include <helpers/event_grouper.h>
 #include "gui_main.h"
 #include <settings/brightness.h>
+#include <helpers/animation_helpers.h>
 
 extern esp_panel::board::Board *board;
 
@@ -60,11 +61,11 @@ void handleContextualSelection(ContextualQuadrant quadrant)
 static void togglePlayerMode()
 {
   // Toggle player mode (1P/2P)
-  int current_mode = player_store.getInt(KEY_PLAYER_MODE, 1);
-  if (current_mode != 1 && current_mode != 2)
-    current_mode = 1;
-  int new_mode = (current_mode == 1) ? 2 : 1;
-  player_store.putInt(KEY_PLAYER_MODE, new_mode);
+  PlayerMode current_mode = (PlayerMode)player_store.getInt(KEY_PLAYER_MODE, PLAYER_MODE_ONE_PLAYER);
+  if (current_mode != PLAYER_MODE_ONE_PLAYER && current_mode != PLAYER_MODE_TWO_PLAYER)
+    current_mode = PLAYER_MODE_ONE_PLAYER;
+  PlayerMode new_mode = (current_mode == PLAYER_MODE_ONE_PLAYER) ? PLAYER_MODE_TWO_PLAYER : PLAYER_MODE_ONE_PLAYER;
+  player_store.putInt(KEY_PLAYER_MODE, (int)new_mode);
   printf("[togglePlayerMode] Player mode toggled to %d\n", new_mode);
   // Rerender main GUI (life counter)
   ui_init();
@@ -73,13 +74,13 @@ static void togglePlayerMode()
 
 static void resetActiveCounter()
 {
-  int player_mode = player_store.getInt(KEY_PLAYER_MODE, 1);
-  if (player_mode == 1)
+  PlayerMode player_mode = (PlayerMode)player_store.getInt(KEY_PLAYER_MODE, PLAYER_MODE_ONE_PLAYER);
+  if (player_mode == PLAYER_MODE_ONE_PLAYER)
   {
     reset_life();
     clear_amp();
   }
-  else if (player_mode == 2)
+  else if (player_mode == PLAYER_MODE_TWO_PLAYER)
   {
     reset_life_p1();
     reset_life_p2();
@@ -97,7 +98,7 @@ static void contextual_btn_event_cb(lv_event_t *e)
 }
 
 // Draw contextual menu overlay with 4 quadrants using LVGL
-void renderContextualMenuOverlay()
+void renderContextualMenuOverlay(bool animate_menu)
 {
   teardownContextualMenuOverlay();
   // Make the overlay a true circle, centered on the screen
@@ -125,23 +126,23 @@ void renderContextualMenuOverlay()
   // Add quadrant labels directly to the overlay for visual feedback
   lv_obj_t *lbl_tl = lv_label_create(contextual_menu);
   lv_label_set_text(lbl_tl, LV_SYMBOL_SETTINGS);
-  lv_obj_set_style_text_font(lbl_tl, &lv_font_montserrat_30, 0);
+  lv_obj_set_style_text_font(lbl_tl, &lv_font_montserrat_40, 0);
   lv_obj_align(lbl_tl, LV_ALIGN_CENTER, -ring_radius / 2, -ring_radius / 2);
 
   lv_obj_t *lbl_tr = lv_label_create(contextual_menu);
-  const char *lbl_text = player_store.getInt(KEY_PLAYER_MODE, 0) == 1 ? "2P" : "1P";
+  const char *lbl_text = player_store.getInt(KEY_PLAYER_MODE, PLAYER_MODE_ONE_PLAYER) == PLAYER_MODE_ONE_PLAYER ? "2P" : "1P";
   lv_label_set_text(lbl_tr, lbl_text);
-  lv_obj_set_style_text_font(lbl_tr, &lv_font_montserrat_30, 0);
+  lv_obj_set_style_text_font(lbl_tr, &lv_font_montserrat_40, 0);
   lv_obj_align(lbl_tr, LV_ALIGN_CENTER, ring_radius / 2, -ring_radius / 2);
 
   lv_obj_t *lbl_bl = lv_label_create(contextual_menu);
   lv_label_set_text(lbl_bl, LV_SYMBOL_REFRESH);
-  lv_obj_set_style_text_font(lbl_bl, &lv_font_montserrat_30, 0);
+  lv_obj_set_style_text_font(lbl_bl, &lv_font_montserrat_40, 0);
   lv_obj_align(lbl_bl, LV_ALIGN_CENTER, -ring_radius / 2, ring_radius / 2);
 
   lv_obj_t *lbl_br = lv_label_create(contextual_menu);
   lv_label_set_text(lbl_br, LV_SYMBOL_LIST);
-  lv_obj_set_style_text_font(lbl_br, &lv_font_montserrat_30, 0);
+  lv_obj_set_style_text_font(lbl_br, &lv_font_montserrat_40, 0);
   lv_obj_align(lbl_br, LV_ALIGN_CENTER, ring_radius / 2, ring_radius / 2);
 
   // Make the overlay itself clickable for quadrant hit detection
@@ -176,23 +177,37 @@ void renderContextualMenuOverlay()
   lv_obj_add_event_cb(center_cancel, [](lv_event_t *e)
                       {
     // Close menu on tap in center
-    renderMenu(MENU_NONE); }, LV_EVENT_CLICKED, NULL);
+    slide_in_obj_vertical(contextual_menu, 0, -SCREEN_HEIGHT, 250, 0, [](lv_anim_t *anim){
+      renderMenu(MENU_NONE);
+    }); }, LV_EVENT_CLICKED, NULL);
   // Label for center cancel
   lv_obj_t *lbl_cancel = lv_label_create(center_cancel);
   lv_label_set_text(lbl_cancel, LV_SYMBOL_CLOSE);
-  lv_obj_set_style_text_font(lbl_cancel, &lv_font_montserrat_30, 0);
+  lv_obj_set_style_text_font(lbl_cancel, &lv_font_montserrat_48, 0);
   lv_obj_center(lbl_cancel); // Center the label in the cancel button
+
+  if (animate_menu)
+  {
+    // Animate the contextual menu to slide in from the top
+    lv_obj_set_y(contextual_menu, -SCREEN_HEIGHT); // Start above the screen
+    slide_in_obj_vertical(contextual_menu, -SCREEN_HEIGHT, 0, 250, 0, nullptr);
+  }
 }
 
 // Update renderMenu to use LVGL overlays
 void renderMenu(MenuState menuType)
+{
+  renderMenu(menuType, true);
+}
+
+void renderMenu(MenuState menuType, bool animate_menu)
 {
   teardownAllMenus();
   hideLifeScreen();
   switch (menuType)
   {
   case MENU_CONTEXTUAL:
-    renderContextualMenuOverlay();
+    renderContextualMenuOverlay(animate_menu);
     break;
   case MENU_SETTINGS:
     renderSettingsOverlay();

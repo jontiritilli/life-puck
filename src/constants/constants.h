@@ -17,7 +17,13 @@ typedef struct
 #define PLAYER_SINGLE 0
 #define PLAYER_ONE 1
 #define PLAYER_TWO 2
-#define GROUPER_WINDOW 1500
+#define GROUPER_WINDOW 2000
+
+enum PlayerMode
+{
+  PLAYER_MODE_ONE_PLAYER = 0,
+  PLAYER_MODE_TWO_PLAYER = 1
+};
 
 // Enum for menu states
 enum MenuState
@@ -49,6 +55,8 @@ enum ContextualQuadrant
 #define BLACK_COLOR lv_color_hex(0x000000)
 #define GRAY_COLOR lv_color_hex(0x808080)
 #define DARK_GRAY_COLOR lv_color_hex(0x404040)
+#define AMP_START_COLOR YELLOW_COLOR // Initial color for amp button
+#define AMP_END_COLOR RED_COLOR      // Final color for amp button
 
 // Constants for StateStore
 #define PLAYER_STORE "player_store"
