@@ -13,6 +13,7 @@
 #include "gestures/gestures.h"
 #include "constants/constants.h"
 #include "state/state_store.h"
+#include "timer/timer.h"
 
 void ui_init(void)
 {

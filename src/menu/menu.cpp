@@ -2,8 +2,8 @@
 #include <lvgl.h>
 #include <esp_display_panel.hpp>
 #include "menu.h"
-#include "settings/start_life.h"
-#include "constants/constants.h"
+#include <settings/start_life.h>
+#include <constants/constants.h>
 #include <math.h>
 #include <battery/battery_state.h>
 #include <settings/settings_overlay.h>
@@ -15,6 +15,7 @@
 #include <helpers/event_grouper.h>
 #include "gui_main.h"
 #include <settings/brightness.h>
+#include <timer/timer.h>
 #include <helpers/animation_helpers.h>
 
 extern esp_panel::board::Board *board;
@@ -87,6 +88,7 @@ static void resetActiveCounter()
   }
   printf("[resetActiveCounter] Reset life counter and history for player mode %d\n", player_mode);
 
+  reset_timer();
   showLifeScreen();
   teardownAllMenus();
 }

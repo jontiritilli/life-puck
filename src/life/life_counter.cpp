@@ -15,7 +15,6 @@
 lv_obj_t *life_counter_container = nullptr; // Global for menu access
 lv_obj_t *amp_button = nullptr;             // Global for menu access
 static lv_obj_t *life_arc = nullptr;
-extern lv_obj_t *timer_label; // Provided by timer.cpp
 static lv_obj_t *life_label = nullptr;
 static lv_obj_t *grouped_change_label = nullptr;
 static lv_obj_t *lbl_amp_label = nullptr;
@@ -219,6 +218,7 @@ void teardown_life_counter()
   // Reset the event grouper to clear any pending state when showing the life counter
   event_grouper.resetHistory(max_life);
   clear_gesture_callbacks(); // Clear any previous gesture callbacks
+  teardown_timer();
   clear_amp();
   // Clean up previous objects if switching modes
   if (life_counter_container)
@@ -226,6 +226,12 @@ void teardown_life_counter()
     lv_obj_del(life_counter_container);
     life_counter_container = nullptr;
   }
+  // Reset all static pointers to prevent use-after-free
+  life_arc = nullptr;
+  life_label = nullptr;
+  grouped_change_label = nullptr;
+  amp_button = nullptr;
+  lbl_amp_label = nullptr;
 }
 // Animation callback for arc
 static void arc_anim_cb(void *arc_obj, int32_t v)

@@ -9,8 +9,10 @@
 #include <helpers/event_grouper.h>
 #include <menu/menu.h>
 #include "constants/constants.h"
+#include <timer/timer.h>
 
 // --- Two Player Life Counter GUI State ---
+#define ARC_GAP_DEGREES 60
 lv_obj_t *life_counter_container_2p = nullptr; // Global for menu access
 static lv_obj_t *life_arc_p1 = nullptr;
 static lv_obj_t *life_arc_p2 = nullptr;
@@ -70,13 +72,16 @@ void init_life_counter_2P()
   if (!life_arc_p1)
   {
     printf("[init_life_counter_2P] Creating life_arc_p1\n");
-    // Create arc/label for Player 1 (sweep left: 90° to 0°, centered)
+    // Player 1 arc: left half, with gap at both top and bottom
     life_arc_p1 = lv_arc_create(life_counter_container_2p);
     lv_obj_add_flag(life_arc_p1, LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_size(life_arc_p1, SCREEN_DIAMETER, SCREEN_DIAMETER);
     lv_obj_align(life_arc_p1, LV_ALIGN_CENTER, 0, 0);
-    lv_arc_set_bg_angles(life_arc_p1, 0, 360); // left sweep background
-    lv_arc_set_angles(life_arc_p1, 90, 270);   // indicator starts at bottom center
+    // Arc covers from (90°+gap/2) to 270° (meets at top, gap at bottom)
+    int arc1_bg_start = 90 + ARC_GAP_DEGREES / 2;
+    int arc1_bg_end = 270;
+    lv_arc_set_bg_angles(life_arc_p1, arc1_bg_start, arc1_bg_end);
+    lv_arc_set_angles(life_arc_p1, arc1_bg_start, arc1_bg_start); // Start at min
     lv_obj_set_style_arc_color(life_arc_p1, GREEN_COLOR, LV_PART_INDICATOR);
     lv_obj_set_style_arc_opa(life_arc_p1, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_arc_width(life_arc_p1, 0, LV_PART_MAIN);
@@ -100,14 +105,17 @@ void init_life_counter_2P()
   if (!life_arc_p2)
   {
     printf("[init_life_counter_2P] Creating life_arc_p2\n");
-    // Create arc/label for Player 2 (sweep right: 90° to 180°, centered)
+    // Player 2 arc: right half, with gap at both top and bottom
     life_arc_p2 = lv_arc_create(life_counter_container_2p);
     lv_obj_add_flag(life_arc_p2, LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_size(life_arc_p2, SCREEN_DIAMETER, SCREEN_DIAMETER);
     lv_obj_align(life_arc_p2, LV_ALIGN_CENTER, 0, 0);
-    lv_arc_set_bg_angles(life_arc_p2, 0, 360);         // right sweep background
-    lv_arc_set_angles(life_arc_p2, 270, 90);           // indicator starts at top center, grows counterclockwise
-    lv_arc_set_mode(life_arc_p2, LV_ARC_MODE_REVERSE); // Enable reverse mode for counterclockwise sweep
+    // Arc covers from 270° to (90°-gap/2) (meets at top, gap at bottom)
+    int arc2_bg_start = 270;
+    int arc2_bg_end = 90 - ARC_GAP_DEGREES / 2;
+    lv_arc_set_bg_angles(life_arc_p2, arc2_bg_start, arc2_bg_end);
+    lv_arc_set_angles(life_arc_p2, arc2_bg_start, arc2_bg_start); // Start at min
+    lv_arc_set_mode(life_arc_p2, LV_ARC_MODE_REVERSE);            // Enable reverse mode for counterclockwise sweep
     lv_obj_set_style_arc_color(life_arc_p2, GREEN_COLOR, LV_PART_INDICATOR);
     lv_obj_set_style_arc_opa(life_arc_p2, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_arc_width(life_arc_p2, 0, LV_PART_MAIN);
@@ -208,6 +216,12 @@ void init_life_counter_2P()
   fade_in_obj(life_label_p1, 1000, 0, NULL);
   lv_obj_clear_flag(life_label_p2, LV_OBJ_FLAG_HIDDEN);
   fade_in_obj(life_label_p2, 1000, 0, NULL);
+
+  if (!timer_container)
+  {
+    render_timer(life_counter_container_2p);
+    lv_obj_align(timer_container, LV_ALIGN_BOTTOM_MID, 0, 5); // Offset down so timer sits slightly offscreen
+  }
 }
 
 // Increment life total and update label
@@ -227,6 +241,7 @@ void teardown_life_counter_2P()
   printf("[tearDownLifeCounter2P] Clearing life counter objects\n");
   event_grouper_p1.resetHistory(max_life);
   event_grouper_p2.resetHistory(max_life);
+  teardown_timer();
   clear_gesture_callbacks(); // Clear any previous gesture callbacks
   // Clean up previous objects before creating new ones
   if (life_counter_container_2p)
@@ -234,6 +249,14 @@ void teardown_life_counter_2P()
     lv_obj_del(life_counter_container_2p);
     life_counter_container_2p = nullptr;
   }
+  // Reset all static pointers to prevent use-after-free
+  life_arc_p1 = nullptr;
+  life_arc_p2 = nullptr;
+  life_label_p1 = nullptr;
+  life_label_p2 = nullptr;
+  grouped_change_label_p1 = nullptr;
+  grouped_change_label_p2 = nullptr;
+  center_line = nullptr;
 }
 
 // Reset life total for Player 1
@@ -267,12 +290,15 @@ static void arc_sweep_anim_cb_p1(void *var, int32_t v)
 {
   if (v > max_life)
     v = max_life;
-  // Sweep left: 90° to 0° (Player 1)
-  int sweep = (int)(90.0f * ((float)v / (float)max_life) + 0.5f);
-  int end_angle = 90 - sweep;
-  if (end_angle < 0)
-    end_angle = 0;
-  lv_arc_set_angles(life_arc_p1, 90, end_angle);
+  // Sweep left: 90°+gap/2 to 270° (Player 1)
+  int arc_start = 90 + ARC_GAP_DEGREES / 2;
+  int arc_end = 270;
+  int arc_span = arc_end - arc_start;
+  int sweep = (int)(arc_span * ((float)v / (float)max_life) + 0.5f);
+  int end_angle = arc_start + sweep;
+  if (end_angle > arc_end)
+    end_angle = arc_end;
+  lv_arc_set_angles(life_arc_p1, arc_start, end_angle);
   update_life_label(1, v);
 }
 
@@ -281,9 +307,17 @@ static void arc_sweep_anim_cb_p2(void *var, int32_t v)
 {
   if (v > max_life)
     v = max_life;
-  // For right half: use start_angle=270, end_angle=90 (reverse mode)
-  lv_arc_set_angles(life_arc_p2, 270, 90);
-  lv_arc_set_value(life_arc_p2, v);
+  // For right half: use start_angle=270, end_angle=90-gap/2 (reverse mode, grows counterclockwise)
+  int arc_start = 270;
+  int arc_end = 90 - ARC_GAP_DEGREES / 2;
+  int arc_span = (arc_end - arc_start + 360) % 360;
+  int sweep = (int)(arc_span * ((float)v / (float)max_life) + 0.5f);
+  if (arc_span == 0)
+    arc_span = 360; // fallback
+  if (sweep > arc_span)
+    sweep = arc_span;
+  int anim_end = (arc_end - sweep + 360) % 360;
+  lv_arc_set_angles(life_arc_p2, anim_end, arc_end);
   update_life_label(2, v);
 }
 
@@ -337,13 +371,15 @@ static arc_segment_t life_to_arc_p1(int life_total)
     arc_color = RED_COLOR;
   if (arc_life >= (int)(0.875 * max_life))
     arc_color = GREEN_COLOR;
-  int start_angle = 90;
-  int sweep = (int)(180.0f * ((float)arc_life / (float)max_life) + 0.5f);
-  int arc_end = start_angle + sweep;
-  if (arc_end > 360)
-    arc_end -= 360;
-  seg.start_angle = start_angle;
-  seg.end_angle = arc_end;
+  int arc_start = 90 + ARC_GAP_DEGREES / 2;
+  int arc_end = 270;
+  int arc_span = arc_end - arc_start;
+  int sweep = (int)(arc_span * ((float)arc_life / (float)max_life) + 0.5f);
+  int seg_end = arc_start + sweep;
+  if (seg_end > arc_end)
+    seg_end = arc_end;
+  seg.start_angle = arc_start;
+  seg.end_angle = seg_end;
   seg.color = arc_color;
   return seg;
 }
@@ -370,28 +406,18 @@ static arc_segment_t life_to_arc_p2(int life_total)
   if (arc_life >= (int)(0.875 * max_life))
     arc_color = GREEN_COLOR;
 
-  seg.end_angle = 90;
-  if (arc_life <= 0)
-  {
-    seg.start_angle = 90;
-  }
-  else if (arc_life >= max_life)
-  {
-    seg.start_angle = 270;
-  }
-  else
-  {
-    // if the life value is something else, calculate the angle to be between 0-90 or 270-360
-    // 0% life = 90° (bottom center), 100% life = 270° (top center)
-    // Calculate the angle based on the life percentage
-    // 0% life = 90° (bottom center), 100% life = 270° (top center)
-    // 50% life = 360° (right center)
-    // 25% life = 315° (bottom right), 75% life = 290° (top right)
-    float percent = (float)arc_life / (float)max_life; // 0.0 to 1.0
-    int arc_span = (int)(percent * 180.0f + 0.5f);     // 0 to 180°
-
-    seg.start_angle = (seg.end_angle - arc_span + 360) % 360; // Always positive
-  }
+  int arc_start = 270;
+  int arc_end = 90 - ARC_GAP_DEGREES / 2;
+  int arc_span = (arc_end - arc_start + 360) % 360;
+  float percent = (float)arc_life / (float)max_life;
+  int sweep = (int)(arc_span * percent + 0.5f);
+  if (arc_span == 0)
+    arc_span = 360; // fallback
+  if (sweep > arc_span)
+    sweep = arc_span;
+  int seg_start = (arc_end - sweep + 360) % 360;
+  seg.start_angle = seg_start;
+  seg.end_angle = arc_end;
   seg.color = arc_color;
   return seg;
 }

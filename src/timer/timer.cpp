@@ -5,11 +5,11 @@
 lv_obj_t *timer_container = nullptr; // Container for the timer label
 static lv_obj_t *timer_label = nullptr;
 static lv_timer_t *timer = nullptr;
-static int elapsed_seconds = 0;
+int elapsed_seconds = 0;
 static bool timer_running = false;
 
 // Forward declarations
-static void reset_timer();
+void reset_timer();
 
 // Format and update the timer label
 static void update_timer_label()
@@ -91,4 +91,22 @@ void reset_timer()
   elapsed_seconds = 0;
   timer_running = false;
   update_timer_label();
+}
+
+// Fully teardown the timer and its state
+void teardown_timer()
+{
+  if (timer_container)
+  {
+    lv_obj_del(timer_container);
+    timer_container = nullptr;
+  }
+  if (timer)
+  {
+    lv_timer_del(timer);
+    timer = nullptr;
+  }
+  timer_label = nullptr;
+  elapsed_seconds = 0;
+  timer_running = false;
 }
