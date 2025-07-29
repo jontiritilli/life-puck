@@ -28,13 +28,6 @@ void renderHistoryOverlay()
     std::sort(history.begin(), history.end(), [](const LifeHistoryEvent &a, const LifeHistoryEvent &b)
               { return a.timestamp < b.timestamp; });
   }
-
-  // Clean up previous history_menu if it exists to prevent memory leaks
-  if (history_menu)
-  {
-    lv_obj_del(history_menu);
-    history_menu = nullptr;
-  }
   history_menu = lv_obj_create(lv_scr_act());
   lv_obj_set_size(history_menu, SCREEN_WIDTH, SCREEN_HEIGHT);
   lv_obj_set_style_bg_color(history_menu, BLACK_COLOR, LV_PART_MAIN);
