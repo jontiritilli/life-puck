@@ -22,6 +22,8 @@
     "functional": "cpp",
     "tuple": "cpp",
     "type_traits": "cpp",
-    "utility": "cpp"
+    "utility": "cpp",
+    "compare": "cpp",
+    "cstdint": "cpp"
   }
 }

@@ -217,7 +217,8 @@ void init_life_counter_2P()
   lv_obj_clear_flag(life_label_p2, LV_OBJ_FLAG_HIDDEN);
   fade_in_obj(life_label_p2, 1000, 0, NULL);
 
-  if (!timer_container)
+  uint64_t show_timer = player_store.getInt(KEY_SHOW_TIMER, 0);
+  if (!timer_container && show_timer)
   {
     render_timer(life_counter_container_2p);
     lv_obj_align(timer_container, LV_ALIGN_BOTTOM_MID, 0, 5); // Offset down so timer sits slightly offscreen

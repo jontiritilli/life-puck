@@ -13,3 +13,5 @@ void render_timer(lv_obj_t *parent);
 void reset_timer();
 
 void teardown_timer(); // Cleans up the timer overlay
+
+uint64_t toggle_timer();

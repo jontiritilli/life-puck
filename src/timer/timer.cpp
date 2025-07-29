@@ -1,6 +1,7 @@
 #include <lvgl.h>
 #include <stdio.h>
 #include "constants/constants.h"
+#include <state/state_store.h>
 
 lv_obj_t *timer_container = nullptr; // Container for the timer label
 static lv_obj_t *timer_label = nullptr;
@@ -109,4 +110,12 @@ void teardown_timer()
   timer_label = nullptr;
   elapsed_seconds = 0;
   timer_running = false;
+}
+
+uint64_t toggle_timer()
+{
+  uint64_t show_timer = player_store.getInt(KEY_SHOW_TIMER, 0);
+  player_store.putInt(KEY_SHOW_TIMER, !show_timer);
+  printf("[toggle_timer] Timer visibility toggled to %s\n", !show_timer ? "off" : "on");
+  return !show_timer;
 }

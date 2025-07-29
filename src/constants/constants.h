@@ -66,6 +66,8 @@ enum ContextualQuadrant
 #define KEY_AMP_MODE "amp_mode"
 #define KEY_LIFE_STEP_SMALL "life_step_small"
 #define KEY_LIFE_STEP_LARGE "life_step_large"
+#define KEY_SHOW_TIMER "show_timer"
+
 // define for life increment levels small and large
 #define DEFAULT_LIFE_INCREMENT_SMALL 1
 #define DEFAULT_LIFE_INCREMENT_LARGE 5

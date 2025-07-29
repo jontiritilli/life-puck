@@ -158,10 +158,11 @@ void init_life_counter()
     fade_in_obj(life_label, 1000, 0, NULL); // Register gesture callbacks for tap and swipe
   }
 
-  if (!timer_container)
+  uint64_t show_timer = player_store.getInt(KEY_SHOW_TIMER, 0);
+  if (!timer_container && show_timer)
   {
     render_timer(life_counter_container);
-    lv_obj_align(timer_container, LV_ALIGN_BOTTOM_MID, 0, 20); // Offset down so timer sits slightly offscreen
+    lv_obj_align(timer_container, LV_ALIGN_BOTTOM_MID, 0, 24); // Offset down so timer sits slightly offscreen
   }
 }
 
