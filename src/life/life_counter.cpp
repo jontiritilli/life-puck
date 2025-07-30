@@ -9,10 +9,12 @@
 #include <helpers/event_grouper.h>
 #include <menu/menu.h>
 #include "constants/constants.h"
+#include <timer/timer.h>
 
 // --- Life Counter GUI State ---
-lv_obj_t *amp_button = nullptr;
-lv_obj_t *life_arc = nullptr; // Global for menu access
+lv_obj_t *life_counter_container = nullptr; // Global for menu access
+lv_obj_t *amp_button = nullptr;             // Global for menu access
+static lv_obj_t *life_arc = nullptr;
 static lv_obj_t *life_label = nullptr;
 static lv_obj_t *grouped_change_label = nullptr;
 static lv_obj_t *lbl_amp_label = nullptr;
@@ -45,11 +47,23 @@ void init_life_counter()
   teardown_life_counter(); // Clean up any previous state
   int amp_mode = player_store.getInt(KEY_AMP_MODE, PLAYER_SINGLE);
 
+  // Create a container for the life counter UI if it doesn't exist
+  if (!life_counter_container)
+  {
+    life_counter_container = lv_obj_create(lv_scr_act());
+    lv_obj_set_size(life_counter_container, SCREEN_WIDTH, SCREEN_HEIGHT);
+    lv_obj_align(life_counter_container, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_clear_flag(life_counter_container, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(life_counter_container, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_scrollbar_mode(life_counter_container, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_style_bg_opa(life_counter_container, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_opa(life_counter_container, LV_OPA_TRANSP, 0);
+  }
   // Only create arc and label if they do not exist
   if (!life_arc)
   {
     printf("[init_life_counter] Creating life_arc...\n");
-    life_arc = lv_arc_create(lv_scr_act());
+    life_arc = lv_arc_create(life_counter_container);
     lv_obj_add_flag(life_arc, LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_size(life_arc, SCREEN_DIAMETER, SCREEN_DIAMETER);
     lv_obj_align(life_arc, LV_ALIGN_CENTER, 0, 0);
@@ -66,7 +80,7 @@ void init_life_counter()
   }
   if (!life_label)
   {
-    life_label = lv_label_create(lv_scr_act());
+    life_label = lv_label_create(life_counter_container);
     lv_obj_add_flag(life_label, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(life_label, "0");                                // Always set text immediately
     lv_obj_set_style_text_font(life_label, &lv_font_montserrat_72, 0); // Large font
@@ -75,7 +89,7 @@ void init_life_counter()
     lv_obj_set_style_text_opa(life_label, LV_OPA_TRANSP, 0); // Start transparent
 
     // Create grouped change label above life_label
-    grouped_change_label = lv_label_create(lv_scr_act());
+    grouped_change_label = lv_label_create(life_counter_container);
     lv_obj_add_flag(grouped_change_label, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(grouped_change_label, "0");
     lv_obj_set_style_text_font(grouped_change_label, &lv_font_montserrat_40, 0);
@@ -85,10 +99,10 @@ void init_life_counter()
   // Create amp button if not already created
   if (!amp_button)
   {
-    amp_button = lv_btn_create(lv_scr_act());
+    amp_button = lv_btn_create(life_counter_container);
     lv_obj_set_size(amp_button, 110, 110);
     lv_obj_set_style_radius(amp_button, LV_RADIUS_CIRCLE, LV_PART_MAIN);
-    lv_obj_set_style_bg_color(amp_button, LIGHTNING_BLUE_COLOR, 0);
+    lv_obj_set_style_bg_color(amp_button, AMP_START_COLOR, 0);
     static bool amp_long_press = false;
     lv_obj_add_event_cb(amp_button, [](lv_event_t *e)
                         { amp_long_press = false; }, LV_EVENT_PRESSED, NULL);
@@ -136,9 +150,20 @@ void init_life_counter()
     printf("[show_life_counter] Starting arc sweep animation\n");
     lv_anim_start(&anim);
   }
-  // Fade in the life label at the same time as the arc sweep
-  lv_obj_clear_flag(life_label, LV_OBJ_FLAG_HIDDEN);
-  fade_in_obj(life_label, 1000, 0, NULL); // Register gesture callbacks for tap and swipe
+
+  if (life_label)
+  {
+    // Fade in the life label at the same time as the arc sweep
+    lv_obj_clear_flag(life_label, LV_OBJ_FLAG_HIDDEN);
+    fade_in_obj(life_label, 1000, 0, NULL); // Register gesture callbacks for tap and swipe
+  }
+
+  uint64_t show_timer = player_store.getInt(KEY_SHOW_TIMER, 0);
+  if (!timer_container && show_timer)
+  {
+    render_timer(life_counter_container);
+    lv_obj_align(timer_container, LV_ALIGN_BOTTOM_MID, 0, 24); // Offset down so timer sits slightly offscreen
+  }
 }
 
 void increment_amp()
@@ -153,7 +178,7 @@ void increment_amp()
     uint8_t t = (uint8_t)(((amp_value > peak_amp ? peak_amp : amp_value) * 255) / peak_amp); // Scale t from 0 to 255
     if (t > 255)
       t = 255; // Clamp to max 255
-    lv_color_t amp_color = interpolate_color(LIGHTNING_BLUE_COLOR, RED_COLOR, t);
+    lv_color_t amp_color = interpolate_color(AMP_START_COLOR, AMP_END_COLOR, t);
     lv_obj_set_style_bg_color(amp_button, amp_color, 0);
   }
 }
@@ -165,7 +190,7 @@ void clear_amp()
   if (amp_button && lbl_amp_label)
   {
     lv_label_set_text(lbl_amp_label, buf);
-    lv_obj_set_style_bg_color(amp_button, LIGHTNING_BLUE_COLOR, 0);
+    lv_obj_set_style_bg_color(amp_button, AMP_START_COLOR, 0);
   }
 }
 
@@ -194,28 +219,20 @@ void teardown_life_counter()
   // Reset the event grouper to clear any pending state when showing the life counter
   event_grouper.resetHistory(max_life);
   clear_gesture_callbacks(); // Clear any previous gesture callbacks
+  teardown_timer();
   clear_amp();
   // Clean up previous objects if switching modes
-  if (life_arc)
+  if (life_counter_container)
   {
-    lv_obj_del(life_arc);
-    life_arc = nullptr;
+    lv_obj_del(life_counter_container);
+    life_counter_container = nullptr;
   }
-  if (life_label)
-  {
-    lv_obj_del(life_label);
-    life_label = nullptr;
-  }
-  if (grouped_change_label)
-  {
-    lv_obj_del(grouped_change_label);
-    grouped_change_label = nullptr;
-  }
-  if (amp_button)
-  {
-    lv_obj_del(amp_button);
-    amp_button = nullptr;
-  }
+  // Reset all static pointers to prevent use-after-free
+  life_arc = nullptr;
+  life_label = nullptr;
+  grouped_change_label = nullptr;
+  amp_button = nullptr;
+  lbl_amp_label = nullptr;
 }
 // Animation callback for arc
 static void arc_anim_cb(void *arc_obj, int32_t v)
@@ -254,15 +271,15 @@ static void arc_sweep_anim_ready_cb(lv_anim_t *a)
   int step_large = player_store.getInt(KEY_LIFE_STEP_LARGE, 5); // Default to 5
 
   is_initializing = false;
-  register_gesture_callback(GestureType::TapTop, []()
-                            { increment_life(1); });
-  register_gesture_callback(GestureType::TapBottom, []()
-                            { decrement_life(1); });
-  register_gesture_callback(GestureType::SwipeUp, []()
-                            { increment_life(5); });
+  register_gesture_callback(GestureType::TapTop, [step_small]()
+                            { increment_life(step_small); });
+  register_gesture_callback(GestureType::TapBottom, [step_small]()
+                            { decrement_life(step_small); });
+  register_gesture_callback(GestureType::LongPressTop, [step_large]()
+                            { increment_life(step_large); });
+  register_gesture_callback(GestureType::LongPressBottom, [step_large]()
+                            { decrement_life(step_large); });
   register_gesture_callback(GestureType::SwipeDown, []()
-                            { decrement_life(5); });
-  register_gesture_callback(GestureType::LongPressMenu, []()
                             { renderMenu(MENU_CONTEXTUAL); });
 }
 
@@ -406,6 +423,8 @@ void queue_life_change(int player, int value)
   if (grouped_change_label != nullptr && !is_initializing)
   {
     int pending_change = event_grouper.getPendingChange() + value;
+    int current_life = event_grouper.getLifeTotal();
+    update_life_label((current_life + pending_change));
     char buf[8];
     if (pending_change > 0)
     {
@@ -427,11 +446,7 @@ void queue_life_change(int player, int value)
       if (fade_out_anim && fade_out_anim->var) {
         lv_obj_add_flag((lv_obj_t *)fade_out_anim->var, LV_OBJ_FLAG_HIDDEN);
       } });
-    event_grouper.handleChange(player, value, [](const LifeHistoryEvent &evt)
-                               {
-      printf("[queue_life_change] Player %d life change committed: %d\n", evt.player_id, evt.life_total);
-      // Double-check label and arc are valid before updating
-      update_life_label(evt.life_total); });
+    event_grouper.handleChange(player, value, NULL);
   }
   else if (grouped_change_label == nullptr && !is_initializing)
   {

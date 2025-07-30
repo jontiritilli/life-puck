@@ -73,3 +73,37 @@ void fade_out_obj(lv_obj_t *obj, uint32_t duration, uint32_t delay, lv_anim_read
     lv_anim_set_ready_cb(&anim, ready_cb);
   lv_anim_start(&anim);
 }
+
+// slide in animation for menus or side panels
+void slide_in_obj_horizontal(lv_obj_t *obj, lv_coord_t start_x, lv_coord_t end_x, uint32_t duration, uint32_t delay, lv_anim_ready_cb_t ready_cb)
+{
+  lv_anim_t anim;
+  lv_anim_init(&anim);
+  lv_anim_set_var(&anim, obj);
+  lv_anim_set_exec_cb(&anim, [](void *o, int32_t x)
+                      { lv_obj_set_x((lv_obj_t *)o, x); });
+  lv_obj_set_x(obj, start_x); // Start position
+  lv_anim_set_values(&anim, start_x, end_x);
+  lv_anim_set_time(&anim, duration);
+  lv_anim_set_delay(&anim, delay);
+  if (ready_cb)
+    lv_anim_set_ready_cb(&anim, ready_cb);
+  lv_anim_start(&anim);
+}
+
+// slide in animation for vertical movement (Y axis)
+void slide_in_obj_vertical(lv_obj_t *obj, lv_coord_t start_y, lv_coord_t end_y, uint32_t duration, uint32_t delay, lv_anim_ready_cb_t ready_cb)
+{
+  lv_anim_t anim;
+  lv_anim_init(&anim);
+  lv_anim_set_var(&anim, obj);
+  lv_anim_set_exec_cb(&anim, [](void *o, int32_t y)
+                      { lv_obj_set_y((lv_obj_t *)o, y); });
+  lv_obj_set_y(obj, start_y); // Start position
+  lv_anim_set_values(&anim, start_y, end_y);
+  lv_anim_set_time(&anim, duration);
+  lv_anim_set_delay(&anim, delay);
+  if (ready_cb)
+    lv_anim_set_ready_cb(&anim, ready_cb);
+  lv_anim_start(&anim);
+}

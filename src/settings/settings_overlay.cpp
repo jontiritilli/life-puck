@@ -5,9 +5,13 @@
 #include <lvgl.h>
 #include <state/state_store.h>
 #include <life/life_counter.h>
+#include <life/life_counter2P.h>
 #include <helpers/animation_helpers.h>
+#include <timer/timer.h>
 
 extern lv_obj_t *settings_menu;
+extern lv_obj_t *life_counter_container;
+extern lv_obj_t *life_counter_container_2p;
 
 // Use a static callback instead of a lambda
 static void btn_life_event_cb(lv_event_t *e)
@@ -31,7 +35,7 @@ void renderSettingsOverlay()
   // Define grid: 9 rows, 1 column
   // Center the layout by using a single column and adjusting alignment
   static lv_coord_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-  static lv_coord_t row_dsc[] = {60, 40, 40, 40, 40, LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+  static lv_coord_t row_dsc[] = {60, 40, 40, 40, 40, 40, LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
   lv_obj_set_grid_dsc_array(settings_menu, col_dsc, row_dsc);
   lv_obj_set_layout(settings_menu, LV_LAYOUT_GRID);
   lv_obj_set_scrollbar_mode(settings_menu, LV_SCROLLBAR_MODE_OFF); // Disable scrollbar
@@ -47,7 +51,7 @@ void renderSettingsOverlay()
   lv_obj_center(lbl_back);
   lv_obj_set_style_text_color(lbl_back, lv_color_black(), 0);
   lv_obj_add_event_cb(btn_back, [](lv_event_t *e)
-                      { renderMenu(MENU_CONTEXTUAL); }, LV_EVENT_CLICKED, NULL);
+                      { renderMenu(MENU_CONTEXTUAL, false); }, LV_EVENT_CLICKED, NULL);
 
   // Start Life button
   lv_obj_t *btn_life = lv_btn_create(settings_menu);
@@ -98,19 +102,68 @@ void renderSettingsOverlay()
     } else if (amp_button && new_mode)
     {
       // show the amp button if it exists
-      lv_obj_set_style_opa(amp_button, LV_OPA_TRANSP, 0); // Start fully transparent
       lv_obj_clear_flag(amp_button, LV_OBJ_FLAG_HIDDEN);
-      fade_in_obj(amp_button, 1000, 0, NULL); // Animate to visible
     } }, LV_EVENT_CLICKED, NULL);
+
+  // Timer Toggle button
+  lv_obj_t *btn_timer_toggle = lv_btn_create(settings_menu);
+  lv_obj_set_size(btn_timer_toggle, 180, 40);
+  lv_obj_set_grid_cell(btn_timer_toggle, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 4, 1);
+  lv_obj_t *lbl_timer = lv_label_create(btn_timer_toggle);
+  uint64_t show_timer = player_store.getInt(KEY_SHOW_TIMER, 0);
+  lv_label_set_text(lbl_timer, (show_timer ? "Timer On" : "Timer Off"));
+  lv_obj_set_style_text_font(lbl_timer, &lv_font_montserrat_20, 0);
+  lv_obj_center(lbl_timer);
+  lv_obj_add_event_cb(btn_timer_toggle, [](lv_event_t *e)
+                      { 
+                        // update the label text based on current state
+                        uint64_t show_timer = toggle_timer();
+                        lv_obj_t *btn = (lv_obj_t *)lv_event_get_target(e);
+                        lv_obj_t *label = lv_obj_get_child(btn, 0);
+                        lv_label_set_text(label, (show_timer ? "Timer On" : "Timer Off"));
+                        uint64_t life_counter_mode = player_store.getInt(KEY_PLAYER_MODE, PLAYER_MODE_ONE_PLAYER);
+                        if (!show_timer)
+                        {
+                          teardown_timer(); // Clean up the timer overlay
+                        } else {
+                          lv_label_set_text(label, "Timer On");
+                          // get reference to active life counter
+                          lv_obj_t *active_counter = (life_counter_mode == PLAYER_MODE_ONE_PLAYER) ?
+                            life_counter_container : life_counter_container_2p;
+                          if (!active_counter)
+                          {
+                            printf("[renderSettingsOverlay] No active life counter found, cannot render timer\n");
+                            return;
+                          }
+                          int offset = (life_counter_mode == PLAYER_MODE_ONE_PLAYER) ? 24 : 5;
+                          // Render the timer overlay on the active life counter
+                          render_timer(active_counter);
+                          lv_obj_align(timer_container, LV_ALIGN_BOTTOM_MID, 0, offset); // Offset down so timer sits slightly offscreen
+                        } }, LV_EVENT_CLICKED, NULL);
+
+  // Restart Device button
+  lv_obj_t *btn_restart = lv_btn_create(settings_menu);
+  lv_obj_set_size(btn_restart, 180, 40);
+  lv_obj_set_grid_cell(btn_restart, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 5, 1);
+  lv_obj_t *lbl_restart = lv_label_create(btn_restart);
+  lv_label_set_text(lbl_restart, "Reboot");
+  lv_obj_set_style_text_font(lbl_restart, &lv_font_montserrat_20, 0);
+  lv_obj_center(lbl_restart);
+  lv_obj_add_event_cb(btn_restart, [](lv_event_t *e)
+                      { esp_restart(); }, LV_EVENT_CLICKED, NULL);
 
   // Battery
   lv_obj_t *lbl_batt = lv_label_create(settings_menu);
   float pct = battery_get_percent();
   char batt_str[32];
-  snprintf(batt_str, sizeof(batt_str), "Battery: %d%%", (int)(pct + 0.5f));
+  const char *bat_symbol = (pct < 15) ? LV_SYMBOL_BATTERY_EMPTY : (pct < 30) ? LV_SYMBOL_BATTERY_1
+                                                              : (pct < 55)   ? LV_SYMBOL_BATTERY_2
+                                                              : (pct < 80)   ? LV_SYMBOL_BATTERY_3
+                                                                             : LV_SYMBOL_BATTERY_FULL;
+  snprintf(batt_str, sizeof(batt_str), "%s %d%%", bat_symbol, (int)(pct + 0.5f));
   lv_label_set_text(lbl_batt, batt_str);
   lv_obj_set_style_text_font(lbl_batt, &lv_font_montserrat_20, 0);
-  lv_obj_set_grid_cell(lbl_batt, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 4, 1);
+  lv_obj_set_grid_cell(lbl_batt, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 6, 1);
 }
 
 void teardownSettingsOverlay()

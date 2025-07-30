@@ -13,6 +13,7 @@
 #include "gestures/gestures.h"
 #include "constants/constants.h"
 #include "state/state_store.h"
+#include "timer/timer.h"
 
 void ui_init(void)
 {
@@ -45,10 +46,10 @@ void ui_init(void)
         if (anim && anim->var) {
           lv_obj_add_flag((lv_obj_t *)anim->var, LV_OBJ_FLAG_HIDDEN);
         }
-        int player_mode = player_store.getInt(KEY_PLAYER_MODE, 1);
+        PlayerMode player_mode = (PlayerMode)player_store.getInt(KEY_PLAYER_MODE, PLAYER_MODE_ONE_PLAYER);
         // Now show the life counter (arc, label, animation)
         life_counter_mode = player_mode;
-        if (player_mode == 1) {
+        if (player_mode == PLAYER_MODE_ONE_PLAYER) {
           init_life_counter();
         } else {
           init_life_counter_2P();
