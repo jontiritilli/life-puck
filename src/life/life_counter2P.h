@@ -3,8 +3,7 @@
 #include <helpers/event_grouper.h>
 
 void init_life_counter_2P();
-void reset_life_p1();
-void reset_life_p2();
+void reset_life_2p();
 void life_counter2p_loop();
 void teardown_life_counter_2P();
 

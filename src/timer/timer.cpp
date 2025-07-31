@@ -6,7 +6,7 @@
 lv_obj_t *timer_container = nullptr; // Container for the timer label
 static lv_obj_t *timer_label = nullptr;
 static lv_timer_t *timer = nullptr;
-int elapsed_seconds = 0;
+static int elapsed_seconds = 0;
 static bool timer_running = false;
 
 // Forward declarations
@@ -22,6 +22,14 @@ static void update_timer_label()
   char buf[8];
   snprintf(buf, sizeof(buf), "%02d:%02d", minutes, seconds);
   lv_label_set_text(timer_label, buf);
+  if (timer_running)
+  {
+    lv_obj_set_style_text_color(timer_label, lv_color_white(), 0); // Change color to indicate running
+  }
+  else
+  {
+    lv_obj_set_style_text_color(timer_label, GRAY_COLOR, 0); // Change color to indicate paused
+  }
 }
 
 // Timer callback to increment time
@@ -112,10 +120,27 @@ void teardown_timer()
   timer_running = false;
 }
 
-uint64_t toggle_timer()
+uint64_t toggle_show_timer()
 {
   uint64_t show_timer = player_store.getInt(KEY_SHOW_TIMER, 0);
   player_store.putInt(KEY_SHOW_TIMER, !show_timer);
-  printf("[toggle_timer] Timer visibility toggled to %s\n", !show_timer ? "off" : "on");
+  printf("[toggle_show_timer] Timer visibility toggled to %s\n", !show_timer ? "off" : "on");
   return !show_timer;
+}
+
+bool toggle_timer_running()
+{
+  timer_running = !timer_running;
+  update_timer_label();
+  return timer_running;
+}
+
+bool get_is_timer_running()
+{
+  return timer_running;
+}
+
+int get_elapsed_seconds()
+{
+  return elapsed_seconds;
 }
