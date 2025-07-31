@@ -60,26 +60,27 @@ void init_life_counter_2P()
   {
     life_counter_container_2p = lv_obj_create(lv_scr_act());
     lv_obj_set_size(life_counter_container_2p, SCREEN_WIDTH, SCREEN_HEIGHT);
-    lv_obj_align(life_counter_container_2p, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_radius(life_counter_container_2p, LV_RADIUS_CIRCLE, 0);
     lv_obj_clear_flag(life_counter_container_2p, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_clear_flag(life_counter_container_2p, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_scrollbar_mode(life_counter_container_2p, LV_SCROLLBAR_MODE_OFF);
     lv_obj_set_style_bg_opa(life_counter_container_2p, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_opa(life_counter_container_2p, LV_OPA_TRANSP, 0);
-    // Remove all padding and border width to prevent offset
     lv_obj_set_style_pad_all(life_counter_container_2p, 0, 0);
     lv_obj_set_style_border_width(life_counter_container_2p, 0, 0);
+
+    // Set up grid: 3 columns, 1 row
+    static lv_coord_t col_dsc[] = {10, LV_GRID_FR(1), 5, LV_GRID_FR(1), 10, LV_GRID_TEMPLATE_LAST};
+    static lv_coord_t row_dsc[] = {150, 150, 60, LV_GRID_TEMPLATE_LAST};
+    lv_obj_set_grid_dsc_array(life_counter_container_2p, col_dsc, row_dsc);
+    lv_obj_set_layout(life_counter_container_2p, LV_LAYOUT_GRID);
   }
   if (!life_arc_p1)
   {
-    // printf("[init_life_counter_2P] Creating life_arc_p1\n");
-    // Player 1 arc: left half, with gap at both top and bottom
     life_arc_p1 = lv_arc_create(life_counter_container_2p);
     lv_obj_add_flag(life_arc_p1, LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_size(life_arc_p1, SCREEN_DIAMETER, SCREEN_DIAMETER);
     lv_obj_align(life_arc_p1, LV_ALIGN_CENTER, 0, 0);
-    // Arc covers from (90°+gap/2) to 270° (meets at top, gap at bottom)
     int arc1_bg_start = 90 + ARC_GAP_DEGREES / 2;
     int arc1_bg_end = 270;
     lv_arc_set_bg_angles(life_arc_p1, arc1_bg_start, arc1_bg_end);
@@ -94,18 +95,27 @@ void init_life_counter_2P()
   }
   if (!life_label_p1)
   {
-    // printf("[init_life_counter_2P] Creating life_label_p1\n");
-    // Create label for Player 1
     life_label_p1 = lv_label_create(life_counter_container_2p);
     lv_obj_add_flag(life_label_p1, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(life_label_p1, "0");
     if (event_grouper_p1.getLifeTotal() > 999)
-      lv_obj_set_style_text_font(life_label_p1, &lv_font_montserrat_48, 0); // Use smaller font for large numbers
+      lv_obj_set_style_text_font(life_label_p1, &lv_font_montserrat_48, 0);
     else
-      lv_obj_set_style_text_font(life_label_p1, &lv_font_montserrat_72, 0); // Default large font
+      lv_obj_set_style_text_font(life_label_p1, &lv_font_montserrat_72, 0);
     lv_obj_set_style_text_color(life_label_p1, lv_color_white(), 0);
-    lv_obj_align(life_label_p1, LV_ALIGN_CENTER, -SCREEN_DIAMETER / 4, 0);
     lv_obj_set_style_text_opa(life_label_p1, LV_OPA_TRANSP, 0);
+    // Place in grid: column 0, row 0, center vertically and horizontally
+    lv_obj_set_grid_cell(life_label_p1, LV_GRID_ALIGN_CENTER, 1, 1, LV_GRID_ALIGN_START, 1, 1);
+  }
+  if (!grouped_change_label_p1)
+  {
+    // printf("[init_life_counter_2P] Creating grouped_change_label_p1\n");
+    grouped_change_label_p1 = lv_label_create(life_counter_container_2p);
+    lv_obj_add_flag(grouped_change_label_p1, LV_OBJ_FLAG_HIDDEN);
+    lv_label_set_text(grouped_change_label_p1, "0");
+    lv_obj_set_style_text_font(grouped_change_label_p1, &lv_font_montserrat_40, 0);
+    lv_obj_set_style_text_color(grouped_change_label_p1, lv_color_white(), 0);
+    lv_obj_set_grid_cell(grouped_change_label_p1, LV_GRID_ALIGN_CENTER, 1, 1, LV_GRID_ALIGN_END, 0, 1);
   }
   if (!life_arc_p2)
   {
@@ -131,33 +141,19 @@ void init_life_counter_2P()
   }
   if (!life_label_p2)
   {
-    // printf("[init_life_counter_2P] Creating life_label_p2\n");
     life_label_p2 = lv_label_create(life_counter_container_2p);
     lv_obj_add_flag(life_label_p2, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(life_label_p2, "0");
     if (event_grouper_p2.getLifeTotal() > 999)
-      lv_obj_set_style_text_font(life_label_p2, &lv_font_montserrat_48, 0); // Use smaller font for large numbers
+      lv_obj_set_style_text_font(life_label_p2, &lv_font_montserrat_48, 0);
     else
-      lv_obj_set_style_text_font(life_label_p2, &lv_font_montserrat_72, 0); // Default large font
+      lv_obj_set_style_text_font(life_label_p2, &lv_font_montserrat_72, 0);
     lv_obj_set_style_text_color(life_label_p2, lv_color_white(), 0);
-    lv_obj_set_style_text_color(life_label_p2, lv_color_white(), 0);
-    lv_obj_align(life_label_p2, LV_ALIGN_CENTER, SCREEN_DIAMETER / 4, 0);
     lv_obj_set_style_text_opa(life_label_p2, LV_OPA_TRANSP, 0);
+    // Place in grid: column 2, row 0, center vertically and horizontally
+    lv_obj_set_grid_cell(life_label_p2, LV_GRID_ALIGN_CENTER, 3, 1, LV_GRID_ALIGN_START, 1, 1);
   }
-  // Add grouped change labels for Player 1 and Player 2
-
-  if (!grouped_change_label_p1 && life_label_p1)
-  {
-    // printf("[init_life_counter_2P] Creating grouped_change_label_p1\n");
-    grouped_change_label_p1 = lv_label_create(life_counter_container_2p);
-    lv_obj_add_flag(grouped_change_label_p1, LV_OBJ_FLAG_HIDDEN);
-    lv_label_set_text(grouped_change_label_p1, "0");
-    lv_obj_set_style_text_font(grouped_change_label_p1, &lv_font_montserrat_40, 0);
-    lv_obj_set_style_text_color(grouped_change_label_p1, lv_color_white(), 0);
-    lv_obj_align_to(grouped_change_label_p1, life_label_p1, LV_ALIGN_OUT_TOP_MID, -10, -10);
-  }
-
-  if (!grouped_change_label_p2 && life_label_p2)
+  if (!grouped_change_label_p2)
   {
     // printf("[init_life_counter_2P] Creating grouped_change_label_p2\n");
     grouped_change_label_p2 = lv_label_create(life_counter_container_2p);
@@ -165,7 +161,7 @@ void init_life_counter_2P()
     lv_label_set_text(grouped_change_label_p2, "0");
     lv_obj_set_style_text_font(grouped_change_label_p2, &lv_font_montserrat_40, 0);
     lv_obj_set_style_text_color(grouped_change_label_p2, lv_color_white(), 0);
-    lv_obj_align_to(grouped_change_label_p2, life_label_p2, LV_ALIGN_OUT_TOP_MID, -10, -10);
+    lv_obj_set_grid_cell(grouped_change_label_p2, LV_GRID_ALIGN_CENTER, 3, 1, LV_GRID_ALIGN_END, 0, 1);
   }
 
   if (life_arc_p1)
@@ -206,8 +202,8 @@ void init_life_counter_2P()
   if (!center_line)
   {
     // printf("[init_life_counter_2P] Creating center_line (after arcs/labels)\n");
-    int cont_w = lv_obj_get_width(life_counter_container_2p);
-    int cont_h = lv_obj_get_height(life_counter_container_2p);
+    int cont_w = SCREEN_DIAMETER; // Use SCREEN_DIAMETER for full width
+    int cont_h = SCREEN_DIAMETER; // Use SCREEN_DIAMETER for full height
     int x_center = cont_w / 2;
     center_line_points[0].x = x_center;
     center_line_points[0].y = 60;
@@ -230,7 +226,7 @@ void init_life_counter_2P()
   if (!timer_container && show_timer)
   {
     render_timer(life_counter_container_2p);
-    lv_obj_align(timer_container, LV_ALIGN_BOTTOM_MID, 0, 5); // Offset down so timer sits slightly offscreen
+    lv_obj_set_grid_cell(timer_container, LV_GRID_ALIGN_CENTER, 0, 5, LV_GRID_ALIGN_START, 2, 1);
   }
 }
 
