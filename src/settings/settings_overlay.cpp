@@ -82,7 +82,7 @@ void renderSettingsOverlay()
   lv_obj_t *btn_amp_toggle = lv_btn_create(settings_menu);
   lv_obj_set_style_bg_color(btn_amp_toggle, (amp_mode ? LIGHTNING_BLUE_COLOR : GRAY_COLOR), LV_PART_MAIN);
   lv_obj_set_size(btn_amp_toggle, 120, 50);
-  lv_obj_set_grid_cell(btn_amp_toggle, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_END, 2, 1);
+  lv_obj_set_grid_cell(btn_amp_toggle, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_START, 2, 1);
   lv_obj_t *lbl_amp_label = lv_label_create(btn_amp_toggle);
   lv_label_set_text(lbl_amp_label, (amp_mode ? "Amp On" : "Amp Off")); // shows current state
   lv_obj_set_style_text_font(lbl_amp_label, &lv_font_montserrat_20, 0);
@@ -114,7 +114,7 @@ void renderSettingsOverlay()
   lv_obj_t *btn_timer_toggle = lv_btn_create(settings_menu);
   lv_obj_set_size(btn_timer_toggle, 120, 50);
   lv_obj_set_style_bg_color(btn_timer_toggle, (player_store.getInt(KEY_SHOW_TIMER, 1) ? LIGHTNING_BLUE_COLOR : GRAY_COLOR), LV_PART_MAIN);
-  lv_obj_set_grid_cell(btn_timer_toggle, LV_GRID_ALIGN_CENTER, 1, 1, LV_GRID_ALIGN_END, 2, 1);
+  lv_obj_set_grid_cell(btn_timer_toggle, LV_GRID_ALIGN_CENTER, 1, 1, LV_GRID_ALIGN_START, 2, 1);
   lv_obj_t *lbl_timer = lv_label_create(btn_timer_toggle);
   uint64_t show_timer = player_store.getInt(KEY_SHOW_TIMER, 0);
   lv_label_set_text(lbl_timer, (show_timer ? "Timer On" : "Timer Off"));
@@ -142,10 +142,14 @@ void renderSettingsOverlay()
                             printf("[renderSettingsOverlay] No active life counter found, cannot render timer\n");
                             return;
                           }
-                          int offset = (life_counter_mode == PLAYER_MODE_ONE_PLAYER) ? 24 : 5;
                           // Render the timer overlay on the active life counter
                           render_timer(active_counter);
-                          lv_obj_align(timer_container, LV_ALIGN_BOTTOM_MID, 0, offset); // Offset down so timer sits slightly offscreen
+                          if(player_store.getInt(KEY_PLAYER_MODE, PLAYER_MODE_ONE_PLAYER) == PLAYER_MODE_ONE_PLAYER)
+                          {
+                            lv_obj_set_grid_cell(timer_container, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_START, 2, 1);
+                          } else {
+                            lv_obj_set_grid_cell(timer_container, LV_GRID_ALIGN_CENTER, 0, 5, LV_GRID_ALIGN_START, 2, 1);
+                          }
                         } }, LV_EVENT_CLICKED, NULL);
 
   // Restart Device button

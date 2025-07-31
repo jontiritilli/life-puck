@@ -59,6 +59,11 @@ void init_life_counter()
     lv_obj_set_scrollbar_mode(life_counter_container, LV_SCROLLBAR_MODE_OFF);
     lv_obj_set_style_bg_opa(life_counter_container, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_opa(life_counter_container, LV_OPA_TRANSP, 0);
+    // Set up grid: 3 columns, 1 row
+    static lv_coord_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static lv_coord_t row_dsc[] = {130, 150, 60, LV_GRID_TEMPLATE_LAST};
+    lv_obj_set_grid_dsc_array(life_counter_container, col_dsc, row_dsc);
+    lv_obj_set_layout(life_counter_container, LV_LAYOUT_GRID);
   }
   // Only create arc and label if they do not exist
   if (!life_arc)
@@ -91,14 +96,17 @@ void init_life_counter()
     lv_obj_set_style_text_color(life_label, lv_color_white(), 0);
     lv_obj_align(life_label, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_text_opa(life_label, LV_OPA_TRANSP, 0); // Start transparent
-
+    lv_obj_set_grid_cell(life_label, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_START, 1, 1);
+  }
+  if (!grouped_change_label)
+  {
     // Create grouped change label above life_label
     grouped_change_label = lv_label_create(life_counter_container);
     lv_obj_add_flag(grouped_change_label, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(grouped_change_label, "0");
     lv_obj_set_style_text_font(grouped_change_label, &lv_font_montserrat_40, 0);
     lv_obj_set_style_text_color(grouped_change_label, lv_color_white(), 0);
-    lv_obj_align_to(grouped_change_label, life_label, LV_ALIGN_OUT_TOP_MID, -10, -10);
+    lv_obj_set_grid_cell(grouped_change_label, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_END, 0, 1);
   }
   // Create amp button if not already created
   if (!amp_button)
@@ -166,7 +174,7 @@ void init_life_counter()
   if (!timer_container && show_timer)
   {
     render_timer(life_counter_container);
-    lv_obj_align(timer_container, LV_ALIGN_BOTTOM_MID, 0, 24); // Offset down so timer sits slightly offscreen
+    lv_obj_set_grid_cell(timer_container, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_START, 2, 1);
   }
 }
 
