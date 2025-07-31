@@ -132,7 +132,10 @@ void renderHistoryOverlay()
   for (size_t i = 0; i < history.size(); ++i)
   {
     const LifeHistoryEvent &evt = history[i];
-    uint32_t minutes_since_boot = evt.timestamp / 60000;
+    // format the time
+    char time_buf[32];
+    printf("[renderHistoryOverlay] Event %zu: player_id=%d, timestamp=%u\n", i, evt.player_id, evt.timestamp);
+    snprintf(time_buf, sizeof(time_buf), "%02d:%02d", evt.change_timestamp / 60, evt.change_timestamp % 60);
     int life_change = evt.net_life_change;
     int life_total = evt.life_total;
     char buf[64] = "";
@@ -140,11 +143,9 @@ void renderHistoryOverlay()
     if (player_mode == PLAYER_MODE_ONE_PLAYER && evt.player_id == PLAYER_SINGLE)
     {
       if (life_change > 0)
-        snprintf(buf, sizeof(buf), "+%d [%d]", life_change, life_total);
-      else if (life_change < 0)
-        snprintf(buf, sizeof(buf), "%d [%d]", life_change, life_total);
-      else
-        snprintf(buf, sizeof(buf), "0 [%d]", life_total);
+        snprintf(buf, sizeof(buf), "+%d@%s[%d]", life_change, time_buf, life_total);
+      else if (life_change <= 0)
+        snprintf(buf, sizeof(buf), "%d@%s[%d]", life_change, time_buf, life_total);
       lv_table_set_row_cnt(table, row_idx + 1);
       lv_table_set_cell_value(table, row_idx, 0, buf);
     }
@@ -154,11 +155,9 @@ void renderHistoryOverlay()
       char p1_buf[64] = "";
       char p2_buf[64] = "";
       if (life_change > 0)
-        snprintf(evt.player_id == PLAYER_ONE ? p1_buf : p2_buf, sizeof(p1_buf), "+%d [%d]", life_change, life_total);
-      else if (life_change < 0)
-        snprintf(evt.player_id == PLAYER_ONE ? p1_buf : p2_buf, sizeof(p1_buf), "%d [%d]", life_change, life_total);
-      else
-        snprintf(evt.player_id == PLAYER_ONE ? p1_buf : p2_buf, sizeof(p1_buf), "0 [%d]", life_total);
+        snprintf(evt.player_id == PLAYER_ONE ? p1_buf : p2_buf, sizeof(p1_buf), "+%d@%s[%d]", life_change, time_buf, life_total);
+      else if (life_change <= 0)
+        snprintf(evt.player_id == PLAYER_ONE ? p1_buf : p2_buf, sizeof(p1_buf), "%d@%s[%d]", life_change, time_buf, life_total);
       lv_table_set_row_cnt(table, row_idx + 1);
       lv_table_set_cell_value(table, row_idx, 0, p1_buf);
       lv_table_set_cell_value(table, row_idx, 1, p2_buf);

@@ -30,11 +30,11 @@ bool wait_for_button_hold(uint16_t hold_ms)
     wake_btn_hold_duration++;
     if (wake_btn_hold_duration >= required_count)
     {
-      printf("[wait_for_button_hold] Button held for %d ms, returning true\n", hold_ms);
+      // printf("[wait_for_button_hold] Button held for %d ms, returning true\n", hold_ms);
       return true; // Button held long enough
     }
   }
-  printf("[wait_for_button_hold] Button released before %d ms, returning false\n", hold_ms);
+  // printf("[wait_for_button_hold] Button released before %d ms, returning false\n", hold_ms);
   return false; // Released before required hold
 }
 
@@ -48,7 +48,7 @@ void wake_up(void)
   {
     BAT_State = BAT_ON;
     digitalWrite(PWR_Control_PIN, HIGH);
-    printf("[wake_up] Waking up device\n");
+    // printf("[wake_up] Waking up device\n");
     esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
     printf("[wake_up] Wakeup reason: %d\n", wakeup_reason);
     vTaskDelay(300);
@@ -57,30 +57,30 @@ void wake_up(void)
 
 void fall_asleep(void)
 {
-  printf("[fall_asleep] Preparing for deep sleep\n");
+  // printf("[fall_asleep] Preparing for deep sleep\n");
   // Power down display and touch
   if (board && board->getBacklight())
   {
     board->getBacklight()->off();
-    printf("[fall_asleep] Backlight OFF\n");
+    // printf("[fall_asleep] Backlight OFF\n");
   }
   digitalWrite(PWR_Control_PIN, LOW);
-  printf("[fall_asleep] Display/touch power OFF\n");
+  // printf("[fall_asleep] Display/touch power OFF\n");
 
   // Disable internal pullups/pulldowns on wake pin to reduce leakage
   pinMode(PWR_KEY_Input_PIN, INPUT);
   gpio_pulldown_dis((gpio_num_t)PWR_KEY_Input_PIN);
   gpio_pullup_dis((gpio_num_t)PWR_KEY_Input_PIN);
-  printf("[fall_asleep] Pullups/pulldowns disabled on wake pin\n");
+  // printf("[fall_asleep] Pullups/pulldowns disabled on wake pin\n");
 
   // Enable wakeup on external pin
   esp_sleep_enable_ext0_wakeup((gpio_num_t)PWR_KEY_Input_PIN, HIGH);
-  printf("[fall_asleep] Wakeup enabled on pin %d\n", PWR_KEY_Input_PIN);
+  // printf("[fall_asleep] Wakeup enabled on pin %d\n", PWR_KEY_Input_PIN);
 
-  printf("[fall_asleep] Entering deep sleep NOW\n");
+  // printf("[fall_asleep] Entering deep sleep NOW\n");
   esp_deep_sleep_start();
   // If we ever return here, something is wrong
-  printf("[fall_asleep] ERROR: Returned from esp_deep_sleep_start! Device did NOT sleep.\n");
+  // printf("[fall_asleep] ERROR: Returned from esp_deep_sleep_start! Device did NOT sleep.\n");
 }
 
 void power_loop(void)
@@ -98,7 +98,7 @@ void power_loop(void)
         uint32_t held_time = millis() - button_press_start;
         if (held_time >= Device_Sleep_Time)
         {
-          printf("[power_loop] Button held for sleep (%lu ms), going to sleep\n", held_time);
+          // printf("[power_loop] Button held for sleep (%lu ms), going to sleep\n", held_time);
           fall_asleep();
         }
       }

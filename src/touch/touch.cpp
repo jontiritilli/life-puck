@@ -9,7 +9,7 @@ static void touch_read_cb(lv_indev_t *indev, lv_indev_data_t *data)
 {
   if (!board->getTouch())
   {
-    printf("[touch_read_cb] no board->getTouch() available\n");
+    // printf("[touch_read_cb] no board->getTouch() available\n");
     data->state = LV_INDEV_STATE_REL;
     return;
   }

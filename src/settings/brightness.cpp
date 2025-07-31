@@ -16,10 +16,10 @@ struct ChangeData
 
 int brightness = player_store.getInt(KEY_BRIGHTNESS, 100); // Default to 100% if not set
 
-static void set_brightness(int value)
+static void set_brightness()
 {
-  player_store.putInt(KEY_BRIGHTNESS, value);
-  bool success = board->getBacklight()->setBrightness(value);
+  player_store.putInt(KEY_BRIGHTNESS, brightness);
+  bool success = board->getBacklight()->setBrightness(brightness);
   if (!success)
   {
     printf("Failed to set brightness\n");
@@ -35,7 +35,7 @@ static void brightness_up_event_handler(lv_event_t *e)
     char buf[8];
     snprintf(buf, sizeof(buf), "%d", brightness);
     lv_label_set_text(value_label, buf);
-    set_brightness(brightness);
+    set_brightness();
   }
   // Optionally update UI here
 }
@@ -49,7 +49,7 @@ static void brightness_down_event_handler(lv_event_t *e)
     char buf[8];
     snprintf(buf, sizeof(buf), "%d", brightness);
     lv_label_set_text(value_label, buf);
-    set_brightness(brightness);
+    set_brightness();
   }
   // Optionally update UI here
 }
@@ -78,7 +78,7 @@ void renderBrightnessOverlay()
 
   // Define grid: 3 columns, 3 rows
   static lv_coord_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-  static lv_coord_t row_dsc[] = {60, 40, 40, LV_GRID_TEMPLATE_LAST}; // row
+  static lv_coord_t row_dsc[] = {60, 100, 40, LV_GRID_TEMPLATE_LAST}; // row
   lv_obj_set_grid_dsc_array(brightness_control, col_dsc, row_dsc);
   lv_obj_set_layout(brightness_control, LV_LAYOUT_GRID);
 
@@ -99,7 +99,7 @@ void renderBrightnessOverlay()
   lv_obj_t *label = lv_label_create(brightness_control);
   lv_label_set_text(label, "Brightness");
   lv_obj_set_style_text_font(label, &lv_font_montserrat_20, 0);
-  lv_obj_set_grid_cell(label, LV_GRID_ALIGN_CENTER, 0, 3, LV_GRID_ALIGN_START, 1, 1);
+  lv_obj_set_grid_cell(label, LV_GRID_ALIGN_CENTER, 0, 3, LV_GRID_ALIGN_CENTER, 1, 1);
 
   // Brightness value label
   lv_obj_t *value_label = lv_label_create(brightness_control);
