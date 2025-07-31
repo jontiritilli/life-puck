@@ -72,3 +72,9 @@ enum ContextualQuadrant
 #define DEFAULT_LIFE_INCREMENT_SMALL 1
 #define DEFAULT_LIFE_INCREMENT_LARGE 5
 #define DEFAULT_LIFE_MAX 40
+
+enum step_size_t
+{
+  STEP_SIZE_SMALL = 1,
+  STEP_SIZE_LARGE = 2
+};

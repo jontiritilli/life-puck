@@ -28,6 +28,7 @@ lv_obj_t *history_menu = nullptr;
 lv_obj_t *brightness_control = nullptr;
 int circle_diameter = SCREEN_WIDTH;
 int circle_radius = circle_diameter / 2;
+static MenuState currentMenu = MENU_NONE;
 
 // Forward declarations
 static void togglePlayerMode();
@@ -39,6 +40,11 @@ void teardownContextualMenuOverlay();
 static bool is_in_center_cancel_area(lv_event_t *e);
 void renderMenu(MenuState menuType);
 bool is_in_quadrant(lv_event_t *e, int angle_start, int angle_end);
+
+MenuState getCurrentMenu()
+{
+  return currentMenu;
+}
 
 void handleContextualSelection(ContextualQuadrant quadrant)
 {
@@ -83,8 +89,7 @@ static void resetActiveCounter()
   }
   else if (player_mode == PLAYER_MODE_TWO_PLAYER)
   {
-    reset_life_p1();
-    reset_life_p2();
+    reset_life_2p();
   }
   printf("[resetActiveCounter] Reset life counter and history for player mode %d\n", player_mode);
 
@@ -210,22 +215,28 @@ void renderMenu(MenuState menuType, bool animate_menu)
   {
   case MENU_CONTEXTUAL:
     renderContextualMenuOverlay(animate_menu);
+    currentMenu = MENU_CONTEXTUAL;
     break;
   case MENU_SETTINGS:
     renderSettingsOverlay();
+    currentMenu = MENU_SETTINGS;
     break;
   case MENU_LIFE_CONFIG:
     renderLifeConfigScreen();
+    currentMenu = MENU_LIFE_CONFIG;
     break;
   case MENU_HISTORY:
     renderHistoryOverlay();
+    currentMenu = MENU_HISTORY;
     break;
   case MENU_BRIGHTNESS:
     renderBrightnessOverlay();
+    currentMenu = MENU_BRIGHTNESS;
     break;
   case MENU_NONE:
   default:
     showLifeScreen();
+    currentMenu = MENU_NONE;
     break;
   }
 }
@@ -286,6 +297,7 @@ void showLifeScreen()
 
 void teardownAllMenus()
 {
+  currentMenu = MENU_NONE; // Reset current menu state
   teardownContextualMenuOverlay();
   teardownSettingsOverlay();
   teardownStartLifeScreen();
