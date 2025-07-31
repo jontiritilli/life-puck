@@ -28,15 +28,26 @@ The case was designed by someone else. I remixed it and modified it (within the 
 
 - One and two player life counter modes
 - Configurable base life settings
+- Configurable increment/decrement step sizes
+- Built-in timer for tracking game duration
 - Quick reset
 - In-app configuration menus for settings and preferences
-- Change history tracking
-- Event grouping for precise control over adjustments to life totals
+- Life change history tracking
+- Event grouping window for precise control over adjustments to life totals
 - Smooth LVGL-based UI animations
 - Robust state management and crash prevention
 - Modular code structure for easy extension
 
 ## Getting Started
+
+### Pre-requisites
+
+- Knowledge of C++ and embedded programming
+- Familiarity with PlatformIO and ESP32 development
+- VS Code installed on your machine
+- Waveshare ESP32-S3 1.85inch Round Display board
+
+### Steps
 
 1. **Clone this repository**
 1. **Install PlatformIO:** [https://platformio.org/install](https://platformio.org/install)
@@ -52,7 +63,3 @@ The case was designed by someone else. I remixed it and modified it (within the 
    ```sh
    pio device monitor -b 115200
    ```
-
----
-
-For more details, see code comments, configuration files, and the [Waveshare ESP32-S3-Touch-LCD-1.85 Wiki](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.85).
