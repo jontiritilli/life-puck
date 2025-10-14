@@ -75,7 +75,7 @@ static void togglePlayerMode()
   player_store.putInt(KEY_PLAYER_MODE, (int)new_mode);
   printf("[togglePlayerMode] Player mode toggled to %d\n", new_mode);
   // Rerender main GUI (life counter)
-  ui_init();
+  ui_init(global_indev);
   renderMenu(MENU_NONE);
 }
 

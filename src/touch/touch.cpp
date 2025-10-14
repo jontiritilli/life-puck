@@ -28,9 +28,10 @@ static void touch_read_cb(lv_indev_t *indev, lv_indev_data_t *data)
   }
 }
 
-void init_touch()
+lv_indev_t* init_touch()
 {
   lv_indev_t *indev = lv_indev_create();
   lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
   lv_indev_set_read_cb(indev, touch_read_cb);
+  return indev;
 }

@@ -30,6 +30,6 @@ enum class GestureType
 using GestureCallback = std::function<void()>;
 
 void register_gesture_callback(GestureType gesture, GestureCallback cb);
-void init_gesture_handling(lv_obj_t *screen);
+void init_gesture_handling(lv_obj_t *screen, lv_indev_t *indev);
 void lvgl_gesture_event_handler(lv_event_t *e);
 void clear_gesture_callbacks();

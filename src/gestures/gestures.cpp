@@ -190,7 +190,7 @@ void handle_menu_quadrant(int x, int y)
 }
 
 // Initialization function to attach event handler to LVGL objects
-void init_gesture_handling(lv_obj_t *root_obj)
+void init_gesture_handling(lv_obj_t *root_obj, lv_indev_t *indev)
 {
   // Only listen to specific events we care about instead of LV_EVENT_ALL for better performance
   lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_PRESSED, NULL);
@@ -199,8 +199,8 @@ void init_gesture_handling(lv_obj_t *root_obj)
   lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_LONG_PRESSED_REPEAT, NULL);
   lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_GESTURE, NULL);
   lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_RELEASED, NULL);
-  lv_indev_set_long_press_time(lv_indev_get_act(), 500);
-  lv_indev_set_long_press_repeat_time(lv_indev_get_act(), 400); // Repeat every 400ms while held (~2.5x per second)
+  lv_indev_set_long_press_time(indev, 500);
+  lv_indev_set_long_press_repeat_time(indev, 500); // Repeat every 500ms while held
 }
 
 // Clear all registered gesture callbacks

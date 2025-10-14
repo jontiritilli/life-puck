@@ -24,6 +24,9 @@ static const BaseType_t app_cpu = 1;
 
 esp_panel::board::Board *board = new esp_panel::board::Board();
 
+// Global input device reference for gesture configuration
+lv_indev_t *global_indev = nullptr;
+
 // Function to create a FreeRTOS task
 BaseType_t create_task(TaskFunction_t task_function, const char *task_name, uint32_t stack_size, void *param, UBaseType_t priority, TaskHandle_t *task_handle);
 
@@ -120,8 +123,9 @@ void gui_task(void *pvParameters)
 
   Serial.println("Creating UI");
 
-  ui_init();
-  init_touch();
+  // Initialize touch first so we have the indev reference
+  global_indev = init_touch();
+  ui_init(global_indev);
 
   // Render black screen first to eliminate static flash
   lv_refr_now(display);
