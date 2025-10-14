@@ -195,7 +195,7 @@ void init_gesture_handling(lv_obj_t *root_obj)
   lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_GESTURE, NULL);
   lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_RELEASED, NULL);
   lv_indev_set_long_press_time(lv_indev_get_act(), 500);
-  lv_indev_set_long_press_repeat_time(lv_indev_get_act(), 200); // Repeat every 200ms while held
+  lv_indev_set_long_press_repeat_time(lv_indev_get_act(), 400); // Repeat every 400ms while held (~2.5x per second)
 }
 
 // Clear all registered gesture callbacks
