@@ -61,9 +61,10 @@ void wake_up(void)
   }
   else
   {
-    // USB plugged in or other wake source - go back to sleep immediately
-    printf("[wake_up] USB charging detected, going back to sleep\n");
-    fall_asleep();
+    // USB plugged in without button - enter charging mode (stay powered but don't init UI)
+    printf("[wake_up] USB charging mode - waiting for button press to boot\n");
+    BAT_State = BAT_CHARGING;
+    digitalWrite(PWR_Control_PIN, HIGH); // Keep power on for charging
   }
 }
 
@@ -105,7 +106,30 @@ void fall_asleep(void)
 
 void power_loop(void)
 {
-  if (BAT_State != BAT_OFF)
+  if (BAT_State == BAT_CHARGING)
+  {
+    // In charging mode - check if button is pressed to boot
+    if (!digitalRead(PWR_KEY_Input_PIN))
+    {
+      if (button_press_start == 0)
+      {
+        button_press_start = millis();
+      }
+      uint32_t held_time = millis() - button_press_start;
+      // Require button hold to boot from charging mode
+      if (held_time >= Device_Wake_Time)
+      {
+        printf("[power_loop] Button held while charging - booting device\n");
+        BAT_State = BAT_ON;
+        button_press_start = 0;
+      }
+    }
+    else
+    {
+      button_press_start = 0;
+    }
+  }
+  else if (BAT_State != BAT_OFF)
   {
     if (!digitalRead(PWR_KEY_Input_PIN))
     {
@@ -134,4 +158,9 @@ void power_loop(void)
 void power_init(void)
 {
   wake_up();
+}
+
+BatteryState get_battery_state(void)
+{
+  return BAT_State;
 }

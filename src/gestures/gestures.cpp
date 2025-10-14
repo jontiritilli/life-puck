@@ -76,7 +76,6 @@ void lvgl_gesture_event_handler(lv_event_t *e)
     {
       // Ignore click after long press
       long_press_active = false;
-      swipe_detected = false;  // Reset here too since we're exiting early
       return;
     }
     if (!swipe_detected)
@@ -138,6 +137,34 @@ void lvgl_gesture_event_handler(lv_event_t *e)
       trigger_gesture(GestureType::LongPressBottom);
     }
   }
+  else if (code == LV_EVENT_LONG_PRESSED_REPEAT)
+  {
+    // Continue triggering long press actions while held
+    if (point.y < SCREEN_HEIGHT / 2)
+    {
+      if (point.x < SCREEN_WIDTH / 2)
+      {
+        trigger_gesture(GestureType::LongPressTopLeft);
+      }
+      else
+      {
+        trigger_gesture(GestureType::LongPressTopRight);
+      }
+      trigger_gesture(GestureType::LongPressTop);
+    }
+    else
+    {
+      if (point.x < SCREEN_WIDTH / 2)
+      {
+        trigger_gesture(GestureType::LongPressBottomLeft);
+      }
+      else
+      {
+        trigger_gesture(GestureType::LongPressBottomRight);
+      }
+      trigger_gesture(GestureType::LongPressBottom);
+    }
+  }
 }
 
 // Example: contextual menu quadrant selection (to be implemented)
@@ -163,15 +190,17 @@ void handle_menu_quadrant(int x, int y)
 }
 
 // Initialization function to attach event handler to LVGL objects
-void init_gesture_handling(lv_obj_t *root_obj)
+void init_gesture_handling(lv_obj_t *root_obj, lv_indev_t *indev)
 {
   // Only listen to specific events we care about instead of LV_EVENT_ALL for better performance
   lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_PRESSED, NULL);
   lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_LONG_PRESSED, NULL);
+  lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_LONG_PRESSED_REPEAT, NULL);
   lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_GESTURE, NULL);
   lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_RELEASED, NULL);
-  lv_indev_set_long_press_time(lv_indev_get_act(), 500);
+  lv_indev_set_long_press_time(indev, 500);
+  lv_indev_set_long_press_repeat_time(indev, 500); // Repeat every 500ms while held
 }
 
 // Clear all registered gesture callbacks

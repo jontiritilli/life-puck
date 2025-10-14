@@ -20,10 +20,12 @@ enum BatteryState
 {
   BAT_OFF = 0,
   BAT_ON = 1,
-  BAT_READY_FOR_SLEEP = 2
+  BAT_READY_FOR_SLEEP = 2,
+  BAT_CHARGING = 3
 };
 
 void fall_asleep(void);
 void wake_up(void);
 void power_init(void);
 void power_loop(void);
+BatteryState get_battery_state(void);
