@@ -84,6 +84,13 @@ BaseType_t create_task(TaskFunction_t task_function, const char *task_name, uint
 
 void gui_task(void *pvParameters)
 {
+  // Wait for device to be actually powered on (not just charging)
+  Serial.println("[gui_task] Waiting for device to boot...");
+  while (get_battery_state() != BAT_ON)
+  {
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+  }
+
   Serial.println("Initializing LVGL");
   lv_init();
   lv_tick_set_cb(xTaskGetTickCount);
