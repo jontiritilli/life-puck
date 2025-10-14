@@ -1,6 +1,6 @@
-# LifePuck Project
+# GamePuck Project
 
-LifePuck is a digital life counter and utility for tabletop and TCG games, designed for the [Waveshare ESP32-S3 1.85inch Round Display](https://www.waveshare.com/esp32-s3-touch-lcd-1.85.htm) board. It features a 1.85" LCD screen with capacitive touch.
+GamePuck is a digital life counter and utility for tabletop and TCG games, designed for the [Waveshare ESP32-S3 1.85inch Round Display](https://www.waveshare.com/esp32-s3-touch-lcd-1.85.htm) board. It features a 1.85" LCD screen with capacitive touch.
 
 The goal of this project is to provide a simple, intuitive, and visually appealing life counter for Flesh and Blood, Magic: The Gathering, Pokémon TCG, and others. It supports both single-player and two-player modes, with customizable settings, additional modes quick reset options, and a robust history.
 
@@ -26,17 +26,34 @@ The case was designed by someone else. I remixed it and modified it (within the 
 
 ## Software Features
 
-- One and two player life counter modes
-- Configurable base life settings
-- Configurable increment/decrement step sizes
-- Built-in timer for tracking game duration
-- Quick reset
-- In-app configuration menus for settings and preferences
-- Life change history tracking
-- Event grouping window for precise control over adjustments to life totals
-- Smooth LVGL-based UI animations
-- Robust state management and crash prevention
-- Modular code structure for easy extension
+- **Dual Mode Support:** One and two player life counter modes with easy toggle
+- **Flexible Life Management:**
+  - Configurable base life settings and step sizes
+  - Tap to adjust life by small step
+  - Long press to adjust by large step
+  - Hold long press to continuously adjust by large step
+- **Gesture Controls:**
+  - Tap quadrants for precise life adjustments
+  - Swipe down to access contextual menu
+  - Long press for alternative actions
+- **Built-in Timer:** Track game duration with integrated timer
+- **History Tracking:** Complete life change history with event grouping
+- **Power Management:**
+  - Deep sleep mode for battery conservation
+  - Smart USB charging detection (won't boot UI when only charging)
+  - Button-activated wake from sleep
+- **Customization:**
+  - Adjustable brightness
+  - Configurable starting life totals
+  - Persistent settings across power cycles
+- **Polished UI:**
+  - Smooth LVGL-based animations
+  - Touch-responsive circular interface optimized for round display
+  - Context-aware menu overlays
+- **Robust Architecture:**
+  - State management and crash prevention
+  - Modular code structure for easy extension
+  - Event-driven gesture system
 
 ## Getting Started
 
