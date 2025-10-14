@@ -9,12 +9,11 @@ static void touch_read_cb(lv_indev_t *indev, lv_indev_data_t *data)
 {
   if (!board->getTouch())
   {
-    // printf("[touch_read_cb] no board->getTouch() available\n");
     data->state = LV_INDEV_STATE_REL;
     return;
   }
   std::vector<esp_panel::drivers::TouchPoint> points;
-  board->getTouch()->readRawData(1, 0, 10);
+  board->getTouch()->readRawData(1, 0, 1); // Reduced timeout from 10ms to 1ms
   bool isSuccess = board->getTouch()->getPoints(points);
   if (isSuccess && points.size() > 0)
   {

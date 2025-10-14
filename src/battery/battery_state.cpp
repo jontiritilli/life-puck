@@ -12,7 +12,6 @@ float battery_get_volts(void)
 {
   int Volts = analogReadMilliVolts(BAT_ADC_PIN); // millivolts
   BAT_analogVolts = (float)(Volts * 3.0 / 1000.0) / Measurement_offset;
-  // printf("BAT voltage : %.2f V\r\n", BAT_analogVolts);
   return BAT_analogVolts;
 }
 

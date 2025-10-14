@@ -109,7 +109,6 @@ void init_life_counter_2P()
   }
   if (!grouped_change_label_p1)
   {
-    // printf("[init_life_counter_2P] Creating grouped_change_label_p1\n");
     grouped_change_label_p1 = lv_label_create(life_counter_container_2p);
     lv_obj_add_flag(grouped_change_label_p1, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(grouped_change_label_p1, "0");
@@ -119,7 +118,6 @@ void init_life_counter_2P()
   }
   if (!life_arc_p2)
   {
-    // printf("[init_life_counter_2P] Creating life_arc_p2\n");
     // Player 2 arc: right half, with gap at both top and bottom
     life_arc_p2 = lv_arc_create(life_counter_container_2p);
     lv_obj_add_flag(life_arc_p2, LV_OBJ_FLAG_HIDDEN);
@@ -155,7 +153,6 @@ void init_life_counter_2P()
   }
   if (!grouped_change_label_p2)
   {
-    // printf("[init_life_counter_2P] Creating grouped_change_label_p2\n");
     grouped_change_label_p2 = lv_label_create(life_counter_container_2p);
     lv_obj_add_flag(grouped_change_label_p2, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(grouped_change_label_p2, "0");
@@ -166,7 +163,6 @@ void init_life_counter_2P()
 
   if (life_arc_p1)
   {
-    // printf("[init_life_counter_2P] Animating life_arc_p1\n");
     // Show Player 1 arc and animate sweep
     // Show arcs and animate sweep while fading in the life labels in parallel
     lv_obj_clear_flag(life_arc_p1, LV_OBJ_FLAG_HIDDEN);
@@ -184,7 +180,6 @@ void init_life_counter_2P()
 
   if (life_arc_p2)
   {
-    // printf("[init_life_counter_2P] Animating life_arc_p2\n");
     // Show Player 2 arc and animate sweep
     lv_obj_clear_flag(life_arc_p2, LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_style_arc_opa(life_arc_p2, LV_OPA_COVER, LV_PART_INDICATOR);
@@ -201,7 +196,6 @@ void init_life_counter_2P()
   // Now create the center line so it is drawn on top
   if (!center_line)
   {
-    // printf("[init_life_counter_2P] Creating center_line (after arcs/labels)\n");
     int cont_w = SCREEN_DIAMETER; // Use SCREEN_DIAMETER for full width
     int cont_h = SCREEN_DIAMETER; // Use SCREEN_DIAMETER for full height
     int x_center = cont_w / 2;
@@ -249,7 +243,6 @@ void decrement_life(int player, step_size_t step_size)
 void teardown_life_counter_2P()
 {
   int max_life = player_store.getInt(KEY_LIFE_MAX, DEFAULT_LIFE_MAX);
-  // printf("[tearDownLifeCounter2P] Clearing life counter objects\n");
   event_grouper_p1.resetHistory(max_life);
   event_grouper_p2.resetHistory(max_life);
   teardown_timer();
@@ -325,19 +318,19 @@ static void arc_sweep_anim_ready_cb(lv_anim_t *a)
   // Register gesture callbacks for tap and swipe, consistent with 1P mode
   register_gesture_callback(GestureType::TapTopLeft, []()
                             { increment_life(PLAYER_ONE, step_size_t::STEP_SIZE_SMALL); });
-  register_gesture_callback(GestureType::TapBottomLeft, []
+  register_gesture_callback(GestureType::TapBottomLeft, []()
                             { decrement_life(PLAYER_ONE, step_size_t::STEP_SIZE_SMALL); });
-  register_gesture_callback(GestureType::LongPressTopLeft, []
+  register_gesture_callback(GestureType::LongPressTopLeft, []()
                             { increment_life(PLAYER_ONE, step_size_t::STEP_SIZE_LARGE); });
-  register_gesture_callback(GestureType::LongPressBottomLeft, []
+  register_gesture_callback(GestureType::LongPressBottomLeft, []()
                             { decrement_life(PLAYER_ONE, step_size_t::STEP_SIZE_LARGE); });
-  register_gesture_callback(GestureType::TapTopRight, []
+  register_gesture_callback(GestureType::TapTopRight, []()
                             { increment_life(PLAYER_TWO, step_size_t::STEP_SIZE_SMALL); });
-  register_gesture_callback(GestureType::TapBottomRight, []
+  register_gesture_callback(GestureType::TapBottomRight, []()
                             { decrement_life(PLAYER_TWO, step_size_t::STEP_SIZE_SMALL); });
-  register_gesture_callback(GestureType::LongPressTopRight, []
+  register_gesture_callback(GestureType::LongPressTopRight, []()
                             { increment_life(PLAYER_TWO, step_size_t::STEP_SIZE_LARGE); });
-  register_gesture_callback(GestureType::LongPressBottomRight, []
+  register_gesture_callback(GestureType::LongPressBottomRight, []()
                             { decrement_life(PLAYER_TWO, step_size_t::STEP_SIZE_LARGE); });
   register_gesture_callback(GestureType::SwipeDown, []()
                             { if(getCurrentMenu() == MENU_NONE)
@@ -509,10 +502,5 @@ void queue_life_change_2p(int player, int value)
         lv_obj_add_flag((lv_obj_t *)fade_out_anim->var, LV_OBJ_FLAG_HIDDEN);
       } });
   }
-  else if (grouped_change_label == nullptr && !is_initializing_2p)
-  {
-    // printf("[queue_life_change_2p] grouped_change_label is NULL for player %d!\n", player);
-  }
-  // printf("[elapsed_seconds] Queuing life change for player %d: %d", player, get_elapsed_seconds());
   grouper->handleChange(player, value, get_elapsed_seconds(), NULL);
 }

@@ -154,6 +154,11 @@ void renderContextualMenuOverlay(bool animate_menu)
 
   // Make the overlay itself clickable for quadrant hit detection
   lv_obj_add_flag(contextual_menu, LV_OBJ_FLAG_CLICKABLE);
+  // Block events from bubbling to screen gesture handler
+  lv_obj_add_event_cb(contextual_menu, [](lv_event_t *e) {
+    // Stop all touch events from propagating to parent screen
+    lv_event_stop_bubbling(e);
+  }, LV_EVENT_ALL, NULL);
   lv_obj_add_event_cb(contextual_menu, [](lv_event_t *e)
                       {
     // Prevent quadrant actions if tap is in the center cancel area
