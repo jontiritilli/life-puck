@@ -43,13 +43,16 @@ void lvgl_gesture_event_handler(lv_event_t *e)
   if (indev)
   {
     lv_indev_get_point(indev, &point);
-    // printf("[lvgl_gesture_event_handler] Event code=%d, point=(%d, %d)\n", code, point.x, point.y);
   }
 
   if (code == LV_EVENT_PRESSED)
   {
     swipe_detected = false;
     long_press_active = false;
+  }
+  else if (code == LV_EVENT_RELEASED)
+  {
+    // Don't reset swipe_detected here - let CLICKED event check it first
   }
   else if (code == LV_EVENT_GESTURE)
   {
@@ -73,6 +76,7 @@ void lvgl_gesture_event_handler(lv_event_t *e)
     {
       // Ignore click after long press
       long_press_active = false;
+      swipe_detected = false;  // Reset here too since we're exiting early
       return;
     }
     if (!swipe_detected)
@@ -102,6 +106,8 @@ void lvgl_gesture_event_handler(lv_event_t *e)
         trigger_gesture(GestureType::TapBottom);
       }
     }
+    // Reset swipe_detected after checking it
+    swipe_detected = false;
   }
   else if (code == LV_EVENT_LONG_PRESSED)
   {
@@ -159,7 +165,12 @@ void handle_menu_quadrant(int x, int y)
 // Initialization function to attach event handler to LVGL objects
 void init_gesture_handling(lv_obj_t *root_obj)
 {
-  lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_ALL, NULL);
+  // Only listen to specific events we care about instead of LV_EVENT_ALL for better performance
+  lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_PRESSED, NULL);
+  lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_LONG_PRESSED, NULL);
+  lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_GESTURE, NULL);
+  lv_obj_add_event_cb(root_obj, lvgl_gesture_event_handler, LV_EVENT_RELEASED, NULL);
   lv_indev_set_long_press_time(lv_indev_get_act(), 500);
 }
 

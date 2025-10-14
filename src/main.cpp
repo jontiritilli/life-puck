@@ -107,17 +107,20 @@ void gui_task(void *pvParameters)
   lv_display_set_buffers(display, buf1, buf2, BUFFER_SIZE, LV_DISPLAY_RENDER_MODE_PARTIAL);
   lv_display_set_flush_cb(display, flush_cb);
 
+  // Clear display to black before creating UI to prevent static flash
+  lv_obj_set_style_bg_color(lv_scr_act(), lv_color_black(), LV_PART_MAIN);
+  lv_obj_set_style_bg_opa(lv_scr_act(), LV_OPA_COVER, LV_PART_MAIN);
+
   Serial.println("Creating UI");
 
   ui_init();
   init_touch();
-  // Force LVGL to draw at least one frame
-  lv_timer_handler();
-  vTaskDelay(50 / portTICK_PERIOD_MS); // Give hardware time to update
 
-  // Force another flush to ensure the frame is valid
-  lv_timer_handler();
-  vTaskDelay(10 / portTICK_PERIOD_MS);
+  // Render black screen first to eliminate static flash
+  lv_refr_now(display);
+  vTaskDelay(100 / portTICK_PERIOD_MS); // Wait for display to fully update
+
+  // Now turn on backlight with clean black screen showing
   board->getBacklight()->on();
   board->getBacklight()->setBrightness(player_store.getInt(KEY_BRIGHTNESS, 100));
   // Step 4: Main GUI loop (LVGL 9.3)
@@ -126,8 +129,7 @@ void gui_task(void *pvParameters)
     uint32_t time_till_next = 5;
 
     // Timer handler needs to be called periodically to handle the tasks of LVGL
-    time_till_next = lv_timer_handler(); // lv_task_handler() is aparently lvgl v8 only
-    // ui_tick();
+    time_till_next = lv_timer_handler();
 
     if (time_till_next != LV_NO_TIMER_READY)           // Handle LV_NO_TIMER_READY (-1)
       vTaskDelay(time_till_next / portTICK_PERIOD_MS); // Delay to avoid unnecessary polling

@@ -20,12 +20,12 @@ StateStore::StateStore(const char *ns) : nsName(ns)
 
 StateStore::~StateStore() {}
 
-void StateStore::putInt(const char *key, u_int64_t value)
+void StateStore::putInt(const char *key, uint64_t value)
 {
   nvs.setInt(key, value);
 }
 
-u_int64_t StateStore::getInt(const char *key, u_int64_t defaultValue)
+uint64_t StateStore::getInt(const char *key, uint64_t defaultValue)
 {
   return nvs.getInt(key, defaultValue);
 }
