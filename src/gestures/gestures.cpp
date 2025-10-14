@@ -43,13 +43,16 @@ void lvgl_gesture_event_handler(lv_event_t *e)
   if (indev)
   {
     lv_indev_get_point(indev, &point);
-    // printf("[lvgl_gesture_event_handler] Event code=%d, point=(%d, %d)\n", code, point.x, point.y);
   }
 
   if (code == LV_EVENT_PRESSED)
   {
     swipe_detected = false;
     long_press_active = false;
+  }
+  else if (code == LV_EVENT_RELEASED)
+  {
+    // Don't reset swipe_detected here - let CLICKED event check it first
   }
   else if (code == LV_EVENT_GESTURE)
   {
@@ -102,6 +105,8 @@ void lvgl_gesture_event_handler(lv_event_t *e)
         trigger_gesture(GestureType::TapBottom);
       }
     }
+    // Reset swipe_detected after checking it
+    swipe_detected = false;
   }
   else if (code == LV_EVENT_LONG_PRESSED)
   {

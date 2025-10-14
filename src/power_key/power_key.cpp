@@ -3,6 +3,8 @@
 #include "shutdown/shutdown.h"
 #include <lvgl.h>
 #include <esp_sleep.h>
+#include <esp_wifi.h>
+#include <esp_bt.h>
 #include <Arduino.h>
 #include <esp_display_panel.hpp>
 #include <state/state_store.h>
@@ -30,11 +32,9 @@ bool wait_for_button_hold(uint16_t hold_ms)
     wake_btn_hold_duration++;
     if (wake_btn_hold_duration >= required_count)
     {
-      // printf("[wait_for_button_hold] Button held for %d ms, returning true\n", hold_ms);
       return true; // Button held long enough
     }
   }
-  // printf("[wait_for_button_hold] Button released before %d ms, returning false\n", hold_ms);
   return false; // Released before required hold
 }
 
@@ -44,13 +44,19 @@ void wake_up(void)
   pinMode(PWR_Control_PIN, OUTPUT);
   digitalWrite(PWR_Control_PIN, LOW);
   vTaskDelay(100);
-  if (!digitalRead(PWR_KEY_Input_PIN))
+
+  // Check wake-up reason to distinguish button press from USB power
+  esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+  printf("[wake_up] Wakeup reason: %d\n", wakeup_reason);
+
+  // Only boot if woken by button (EXT0) or first boot with button held
+  // ESP_SLEEP_WAKEUP_UNDEFINED = power-on reset (USB plugged in)
+  // ESP_SLEEP_WAKEUP_EXT0 = woken by power button
+  if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0 ||
+      (wakeup_reason == ESP_SLEEP_WAKEUP_UNDEFINED && !digitalRead(PWR_KEY_Input_PIN)))
   {
     BAT_State = BAT_ON;
     digitalWrite(PWR_Control_PIN, HIGH);
-    // printf("[wake_up] Waking up device\n");
-    esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
-    printf("[wake_up] Wakeup reason: %d\n", wakeup_reason);
     vTaskDelay(300);
   }
   else
@@ -64,30 +70,38 @@ void wake_up(void)
 
 void fall_asleep(void)
 {
-  // printf("[fall_asleep] Preparing for deep sleep\n");
   // Power down display and touch
   if (board && board->getBacklight())
   {
     board->getBacklight()->off();
-    // printf("[fall_asleep] Backlight OFF\n");
   }
+
+  // Disable peripherals to reduce power consumption
+  // Turn off WiFi and Bluetooth (if enabled) - ignore errors if not initialized
+  esp_wifi_stop();
+  esp_bt_controller_disable();
+
   digitalWrite(PWR_Control_PIN, LOW);
-  // printf("[fall_asleep] Display/touch power OFF\n");
 
   // Disable internal pullups/pulldowns on wake pin to reduce leakage
   pinMode(PWR_KEY_Input_PIN, INPUT);
   gpio_pulldown_dis((gpio_num_t)PWR_KEY_Input_PIN);
   gpio_pullup_dis((gpio_num_t)PWR_KEY_Input_PIN);
-  // printf("[fall_asleep] Pullups/pulldowns disabled on wake pin\n");
 
-  // Enable wakeup on external pin
+  // Disable all wakeup sources first
+  esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
+
+  // Enable wakeup on external pin (power button only)
   esp_sleep_enable_ext0_wakeup((gpio_num_t)PWR_KEY_Input_PIN, HIGH);
-  // printf("[fall_asleep] Wakeup enabled on pin %d\n", PWR_KEY_Input_PIN);
 
-  // printf("[fall_asleep] Entering deep sleep NOW\n");
+  // Configure power domains for minimum consumption during sleep
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_OFF);
+
+  printf("[fall_asleep] Entering deep sleep\n");
+  vTaskDelay(100); // Allow serial output to complete
+
   esp_deep_sleep_start();
-  // If we ever return here, something is wrong
-  // printf("[fall_asleep] ERROR: Returned from esp_deep_sleep_start! Device did NOT sleep.\n");
 }
 
 void power_loop(void)
@@ -128,7 +142,6 @@ void power_loop(void)
         uint32_t held_time = millis() - button_press_start;
         if (held_time >= Device_Sleep_Time)
         {
-          // printf("[power_loop] Button held for sleep (%lu ms), going to sleep\n", held_time);
           fall_asleep();
         }
       }

@@ -59,16 +59,18 @@ void init_life_counter()
     lv_obj_set_scrollbar_mode(life_counter_container, LV_SCROLLBAR_MODE_OFF);
     lv_obj_set_style_bg_opa(life_counter_container, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_opa(life_counter_container, LV_OPA_TRANSP, 0);
-    // Set up grid: 3 columns, 1 row
+    // Remove default padding to prevent grid shift
+    lv_obj_set_style_pad_all(life_counter_container, 0, 0);
+    // Set up grid: 1 column, 3 rows centered on screen
+    // Row heights adjusted so row 1 (life_label) is centered at y=180
     static lv_coord_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    static lv_coord_t row_dsc[] = {130, 150, 60, LV_GRID_TEMPLATE_LAST};
+    static lv_coord_t row_dsc[] = {90, 180, 90, LV_GRID_TEMPLATE_LAST};
     lv_obj_set_grid_dsc_array(life_counter_container, col_dsc, row_dsc);
     lv_obj_set_layout(life_counter_container, LV_LAYOUT_GRID);
   }
   // Only create arc and label if they do not exist
   if (!life_arc)
   {
-    // printf("[init_life_counter] Creating life_arc...\n");
     life_arc = lv_arc_create(life_counter_container);
     lv_obj_add_flag(life_arc, LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_size(life_arc, SCREEN_DIAMETER, SCREEN_DIAMETER);
@@ -82,7 +84,6 @@ void init_life_counter()
     // lv_obj_set_style_arc_rounded(life_arc, 0, LV_PART_INDICATOR); // Square ends
     lv_obj_remove_style(life_arc, NULL, LV_PART_KNOB);
     lv_obj_clear_flag(life_arc, LV_OBJ_FLAG_CLICKABLE);
-    // printf("[show_life_counter] life_arc created.\n");
   }
   if (!life_label)
   {
@@ -96,7 +97,7 @@ void init_life_counter()
     lv_obj_set_style_text_color(life_label, lv_color_white(), 0);
     lv_obj_align(life_label, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_text_opa(life_label, LV_OPA_TRANSP, 0); // Start transparent
-    lv_obj_set_grid_cell(life_label, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_START, 1, 1);
+    lv_obj_set_grid_cell(life_label, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 1, 1);
   }
   if (!grouped_change_label)
   {
@@ -115,6 +116,8 @@ void init_life_counter()
     lv_obj_set_size(amp_button, 110, 110);
     lv_obj_set_style_radius(amp_button, LV_RADIUS_CIRCLE, LV_PART_MAIN);
     lv_obj_set_style_bg_color(amp_button, AMP_START_COLOR, 0);
+    // Make amp button ignore parent's grid layout so it can use absolute positioning
+    lv_obj_add_flag(amp_button, LV_OBJ_FLAG_IGNORE_LAYOUT);
     static bool amp_long_press = false;
     lv_obj_add_event_cb(amp_button, [](lv_event_t *e)
                         { amp_long_press = false; }, LV_EVENT_PRESSED, NULL);
@@ -132,7 +135,9 @@ void init_life_counter()
     lv_obj_set_style_text_color(lbl_amp_label, WHITE_COLOR, 0);
     lv_obj_set_style_text_font(lbl_amp_label, &lv_font_montserrat_36, 0);
     lv_obj_center(lbl_amp_label);
-    lv_obj_align_to(amp_button, life_label, LV_ALIGN_RIGHT_MID, 141, 0);
+    // Position absolutely to the right of screen center (life_label is centered)
+    // Button is 110px wide, so half is 55px. Position center of button right of screen center with gap
+    lv_obj_align(amp_button, LV_ALIGN_CENTER, 115, 0);
     if (amp_mode)
     {
       // Ensure the button is fully transparent and hidden before fade-in
@@ -148,7 +153,6 @@ void init_life_counter()
   // Show arc and animate sweep while fading in the life label in parallel
   if (life_arc)
   {
-    // printf("[show_life_counter] Showing arc\n");
     lv_obj_clear_flag(life_arc, LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_style_arc_opa(life_arc, LV_OPA_COVER, LV_PART_INDICATOR);
     lv_anim_t anim;
@@ -159,7 +163,6 @@ void init_life_counter()
     lv_anim_set_time(&anim, 1500);
     lv_anim_set_delay(&anim, 0);
     lv_anim_set_ready_cb(&anim, arc_sweep_anim_ready_cb);
-    // printf("[show_life_counter] Starting arc sweep animation\n");
     lv_anim_start(&anim);
   }
 
@@ -174,7 +177,7 @@ void init_life_counter()
   if (!timer_container && show_timer)
   {
     render_timer(life_counter_container);
-    lv_obj_set_grid_cell(timer_container, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_START, 2, 1);
+    lv_obj_set_grid_cell(timer_container, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 2, 1);
   }
 }
 
@@ -233,7 +236,6 @@ void reset_life()
 
 void teardown_life_counter()
 {
-  // printf("[tearDownLifeCounter] Clearing life counter objects\n");
   // Reset the event grouper to clear any pending state when showing the life counter
   int max_life = player_store.getInt(KEY_LIFE_MAX, DEFAULT_LIFE_MAX);
   clear_gesture_callbacks(); // Clear any previous gesture callbacks
@@ -468,9 +470,5 @@ void queue_life_change(int player, int value)
         lv_obj_add_flag((lv_obj_t *)fade_out_anim->var, LV_OBJ_FLAG_HIDDEN);
       } });
     event_grouper.handleChange(player, value, get_elapsed_seconds(), NULL);
-  }
-  else if (grouped_change_label == nullptr && !is_initializing)
-  {
-    // printf("[queue_life_change] grouped_change_label is NULL!\n");
   }
 }
