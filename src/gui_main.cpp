@@ -16,7 +16,7 @@
 #include "timer/timer.h"
 #include "images/logo.h"
 
-void ui_init(void)
+void ui_init(lv_indev_t *indev)
 {
   teardown_life_counter_2P();
   teardown_life_counter();
@@ -25,7 +25,7 @@ void ui_init(void)
   // Now load the screen (all objects are hidden/transparent)
   printf("[lv_create_main_gui] Loading screen\n");
   lv_scr_load(lv_obj_create(NULL));
-  init_gesture_handling(lv_scr_act());
+  init_gesture_handling(lv_scr_act(), indev);
   lv_obj_set_style_bg_color(lv_scr_act(), lv_color_black(), LV_PART_MAIN);
   lv_obj_set_style_bg_opa(lv_scr_act(), LV_OPA_COVER, LV_PART_MAIN);
   // Disable scrollbars on screen
