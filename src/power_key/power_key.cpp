@@ -106,7 +106,7 @@ void wake_up(void)
         if (now - last_check > 2000)
         {
           float current_voltage = battery_get_volts();
-          if (current_voltage < USB_VOLTAGE_THRESHOLD) // USB disconnected
+          if (current_voltage < USB_DISCONNECT_THRESHOLD) // USB disconnected (with hysteresis)
           {
             printf("[wake_up] USB disconnected (%.2fV) - entering deep sleep\n", current_voltage);
             break; // Exit to deep sleep below
@@ -116,14 +116,43 @@ void wake_up(void)
       }
     }
 
-    // No USB detected - power down and deep sleep
-    printf("[wake_up] No USB - powering down\n");
+    // No USB detected - check if button is pressed before sleeping
+    printf("[wake_up] No USB detected\n");
+
+    // Give user a moment to press button (check for 500ms)
+    bool button_held = false;
+    for (int i = 0; i < 50; i++)
+    {
+      if (is_button_pressed())
+      {
+        vTaskDelay(50); // Debounce
+        if (is_button_pressed() && wait_for_button_hold(Device_Wake_Time))
+        {
+          printf("[wake_up] Button held during wake - booting device\n");
+          digitalWrite(PWR_Control_PIN, HIGH);
+          vTaskDelay(100);
+          BAT_State = BAT_ON;
+          button_held = true;
+          break;
+        }
+      }
+      vTaskDelay(10);
+    }
+
+    // If button was held, boot the device
+    if (button_held)
+    {
+      return;
+    }
+
+    // No button press detected - power down and deep sleep
+    printf("[wake_up] No button press - powering down\n");
     digitalWrite(PWR_Control_PIN, LOW);
     vTaskDelay(100);
 
     // Configure and enter deep sleep
     esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
-    esp_sleep_enable_ext0_wakeup((gpio_num_t)PWR_KEY_Input_PIN, HIGH);
+    esp_sleep_enable_ext0_wakeup((gpio_num_t)PWR_KEY_Input_PIN, LOW); // Wake on LOW (button press)
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
     esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_OFF);
 
@@ -195,7 +224,7 @@ void fall_asleep(void)
       {
         float current_voltage = battery_get_volts();
 
-        if (current_voltage < USB_VOLTAGE_THRESHOLD) // USB disconnected
+        if (current_voltage < USB_DISCONNECT_THRESHOLD) // USB disconnected (with hysteresis)
         {
           printf("[fall_asleep] USB disconnected (%.2fV) - entering deep sleep\n", current_voltage);
           digitalWrite(PWR_Control_PIN, LOW);
@@ -217,7 +246,7 @@ void fall_asleep(void)
 
   // Configure deep sleep
   esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
-  esp_sleep_enable_ext0_wakeup((gpio_num_t)PWR_KEY_Input_PIN, HIGH);
+  esp_sleep_enable_ext0_wakeup((gpio_num_t)PWR_KEY_Input_PIN, LOW); // Wake on LOW (button press)
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
   esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_OFF);
 

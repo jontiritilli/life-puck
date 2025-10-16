@@ -9,8 +9,11 @@
 #define Device_Sleep_Time 3 * 1000 // 3 seconds (assuming loop rate is 50Hz)
 
 // USB detection voltage threshold
-// USB charging: ~4.16-4.19V, Battery only: ~4.12V, Threshold: 4.13V
-#define USB_VOLTAGE_THRESHOLD 4.13f
+// USB charging: ~4.16-4.19V, Battery only: ~3.7-4.16V, Threshold: 4.15V
+// Set high enough to reliably detect USB charging vs battery
+// Uses hysteresis: higher to detect USB, lower to confirm disconnect
+#define USB_VOLTAGE_THRESHOLD 4.15f
+#define USB_DISCONNECT_THRESHOLD 4.12f
 
 // Button state enum for clarity
 enum ButtonState
