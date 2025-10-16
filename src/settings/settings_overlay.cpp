@@ -167,12 +167,14 @@ void renderSettingsOverlay()
   // Battery
   lv_obj_t *lbl_batt = lv_label_create(settings_menu);
   float pct = battery_get_percent();
+  float volts = battery_get_volts();
+  printf("[Settings] Battery: %.2fV, %.1f%%\n", volts, pct);
   char batt_str[32];
   const char *bat_symbol = (pct < 15) ? LV_SYMBOL_BATTERY_EMPTY : (pct < 30) ? LV_SYMBOL_BATTERY_1
                                                               : (pct < 55)   ? LV_SYMBOL_BATTERY_2
                                                               : (pct < 80)   ? LV_SYMBOL_BATTERY_3
                                                                              : LV_SYMBOL_BATTERY_FULL;
-  snprintf(batt_str, sizeof(batt_str), "%s %d%%", bat_symbol, (int)(pct + 0.5f));
+  snprintf(batt_str, sizeof(batt_str), "%s %d%% (%.2fV)", bat_symbol, (int)(pct + 0.5f), volts);
   lv_label_set_text(lbl_batt, batt_str);
   lv_obj_set_style_text_font(lbl_batt, &lv_font_montserrat_20, 0);
   lv_obj_set_grid_cell(lbl_batt, LV_GRID_ALIGN_CENTER, 0, 2, LV_GRID_ALIGN_CENTER, 4, 1);

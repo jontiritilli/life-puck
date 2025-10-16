@@ -8,6 +8,10 @@
 #define Device_Wake_Time 2 * 1000  // 2 seconds (assuming loop rate is 50Hz)
 #define Device_Sleep_Time 3 * 1000 // 3 seconds (assuming loop rate is 50Hz)
 
+// USB detection voltage threshold
+// USB charging: ~4.16-4.19V, Battery only: ~4.12V, Threshold: 4.13V
+#define USB_VOLTAGE_THRESHOLD 4.13f
+
 // Button state enum for clarity
 enum ButtonState
 {
@@ -19,9 +23,7 @@ enum ButtonState
 enum BatteryState
 {
   BAT_OFF = 0,
-  BAT_ON = 1,
-  BAT_READY_FOR_SLEEP = 2,
-  BAT_CHARGING = 3
+  BAT_ON = 1
 };
 
 void fall_asleep(void);

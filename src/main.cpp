@@ -3,6 +3,7 @@
 #include "ArduinoNvs.h"
 #include "gui_main.h"
 #include <esp_display_panel.hpp>
+#include <esp_sleep.h>
 #include "power_key/power_key.h"
 #include "constants/constants.h"
 #include "battery/battery_state.h"
@@ -87,14 +88,14 @@ BaseType_t create_task(TaskFunction_t task_function, const char *task_name, uint
 
 void gui_task(void *pvParameters)
 {
-  // Wait for device to be actually powered on (not just charging)
+  // Wait for device to be powered on
   Serial.println("[gui_task] Waiting for device to boot...");
   while (get_battery_state() != BAT_ON)
   {
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 
-  Serial.println("Initializing LVGL");
+  Serial.println("[gui_task] Initializing LVGL");
   lv_init();
   lv_tick_set_cb(xTaskGetTickCount);
 
@@ -121,7 +122,7 @@ void gui_task(void *pvParameters)
   lv_obj_set_style_bg_color(lv_scr_act(), lv_color_black(), LV_PART_MAIN);
   lv_obj_set_style_bg_opa(lv_scr_act(), LV_OPA_COVER, LV_PART_MAIN);
 
-  Serial.println("Creating UI");
+  Serial.println("[gui_task] Creating UI");
 
   // Initialize touch first so we have the indev reference
   global_indev = init_touch();
@@ -134,7 +135,8 @@ void gui_task(void *pvParameters)
   // Now turn on backlight with clean black screen showing
   board->getBacklight()->on();
   board->getBacklight()->setBrightness(player_store.getInt(KEY_BRIGHTNESS, 100));
-  // Step 4: Main GUI loop (LVGL 9.3)
+
+  // Main GUI loop (LVGL 9.3)
   while (1)
   {
     uint32_t time_till_next = 5;

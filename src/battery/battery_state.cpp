@@ -19,7 +19,7 @@ float battery_get_percent()
 {
   float volts = battery_get_volts();
   float min_voltage = 3.0;
-  float max_voltage = 4.2;
+  float max_voltage = 4.16;
   float percent = ((volts - min_voltage) / (max_voltage - min_voltage)) * 100.0;
   if (percent > 100.0)
     percent = 100.0;

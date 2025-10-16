@@ -9,16 +9,24 @@
 #include <esp_display_panel.hpp>
 #include <state/state_store.h>
 #include <constants/constants.h>
+#include <battery/battery_state.h>
 
 extern esp_panel::board::Board *board;
 
 static BatteryState BAT_State = BAT_OFF;
-// Device_State removed; only off/on supported
 static uint32_t button_press_start = 0;
+
 // Helper Functions
 bool is_button_pressed(void)
 {
   return (digitalRead(PWR_KEY_Input_PIN) == ButtonState::BUTTON_PRESSED);
+}
+
+// Check if USB is connected by detecting charging voltage
+bool is_usb_connected(void)
+{
+  float voltage = battery_get_volts();
+  return (voltage > USB_VOLTAGE_THRESHOLD);
 }
 
 // Helper function: Wait for button to be held for a specified duration (in ms)
@@ -42,114 +50,207 @@ void wake_up(void)
 {
   pinMode(PWR_KEY_Input_PIN, INPUT);
   pinMode(PWR_Control_PIN, OUTPUT);
-  digitalWrite(PWR_Control_PIN, LOW);
-  vTaskDelay(100);
 
-  // Check wake-up reason to distinguish button press from USB power
+  // Check wake-up reason
   esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
-  printf("[wake_up] Wakeup reason: %d\n", wakeup_reason);
+  float voltage = battery_get_volts();
+  printf("[wake_up] Wakeup reason: %d, Battery voltage: %.2fV\n", wakeup_reason, voltage);
 
-  // Only boot if woken by button (EXT0) or first boot with button held
-  // ESP_SLEEP_WAKEUP_UNDEFINED = power-on reset (USB plugged in)
   // ESP_SLEEP_WAKEUP_EXT0 = woken by power button
-  if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0 ||
-      (wakeup_reason == ESP_SLEEP_WAKEUP_UNDEFINED && !digitalRead(PWR_KEY_Input_PIN)))
+  // ESP_SLEEP_WAKEUP_UNDEFINED = power-on reset (USB plugged in or first boot)
+  if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0)
   {
-    BAT_State = BAT_ON;
+    // Woken by button press - boot the device
+    printf("[wake_up] Button wake - booting device\n");
     digitalWrite(PWR_Control_PIN, HIGH);
-    vTaskDelay(300);
+    vTaskDelay(100);
+    BAT_State = BAT_ON;
   }
   else
   {
-    // USB plugged in without button - enter charging mode (stay powered but don't init UI)
-    printf("[wake_up] USB charging mode - waiting for button press to boot\n");
-    BAT_State = BAT_CHARGING;
-    digitalWrite(PWR_Control_PIN, HIGH); // Keep power on for charging
+    // Non-button wake (USB plug, spurious wake, etc.)
+    printf("[wake_up] Non-button wake detected\n");
+
+    // Check if this might be USB by checking voltage
+    // Note: This threshold may become less accurate as battery ages
+    float voltage = battery_get_volts();
+    bool likely_usb = (voltage > USB_VOLTAGE_THRESHOLD);
+    printf("[wake_up] Voltage: %.2fV, likely USB: %s\n", voltage, likely_usb ? "YES" : "NO");
+
+    if (likely_usb)
+    {
+      // Likely USB - stay in stable idle to prevent flash loop
+      printf("[wake_up] USB detected - entering stable idle mode\n");
+      digitalWrite(PWR_Control_PIN, HIGH);
+      vTaskDelay(100);
+
+      uint32_t last_check = 0;
+      while (true)
+      {
+        vTaskDelay(100);
+
+        // Check for button press to boot
+        if (is_button_pressed())
+        {
+          vTaskDelay(50); // Debounce
+          if (is_button_pressed() && wait_for_button_hold(Device_Wake_Time))
+          {
+            printf("[wake_up] Button held - booting device\n");
+            BAT_State = BAT_ON;
+            return; // Exit to boot
+          }
+        }
+
+        // Check voltage every 2 seconds
+        uint32_t now = millis();
+        if (now - last_check > 2000)
+        {
+          float current_voltage = battery_get_volts();
+          if (current_voltage < USB_VOLTAGE_THRESHOLD) // USB disconnected
+          {
+            printf("[wake_up] USB disconnected (%.2fV) - entering deep sleep\n", current_voltage);
+            break; // Exit to deep sleep below
+          }
+          last_check = now;
+        }
+      }
+    }
+
+    // No USB detected - power down and deep sleep
+    printf("[wake_up] No USB - powering down\n");
+    digitalWrite(PWR_Control_PIN, LOW);
+    vTaskDelay(100);
+
+    // Configure and enter deep sleep
+    esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
+    esp_sleep_enable_ext0_wakeup((gpio_num_t)PWR_KEY_Input_PIN, HIGH);
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
+    esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_OFF);
+
+    printf("[wake_up] Entering deep sleep\n");
+    vTaskDelay(100);
+    esp_deep_sleep_start();
+
+    // Never reaches here
+    BAT_State = BAT_OFF;
   }
 }
 
 void fall_asleep(void)
 {
-  // Power down display and touch
+  printf("[fall_asleep] Shutting down\n");
+
+  // Turn off display
   if (board && board->getBacklight())
   {
     board->getBacklight()->off();
   }
 
-  // Disable peripherals to reduce power consumption
-  // Turn off WiFi and Bluetooth (if enabled) - ignore errors if not initialized
+  // Disable peripherals
   esp_wifi_stop();
   esp_bt_controller_disable();
 
-  digitalWrite(PWR_Control_PIN, LOW);
+  // Check if USB is connected
+  float voltage = battery_get_volts();
+  bool usb_connected = (voltage > USB_VOLTAGE_THRESHOLD);
+  printf("[fall_asleep] USB connected: %s (%.2fV)\n", usb_connected ? "YES" : "NO", voltage);
 
-  // Disable internal pullups/pulldowns on wake pin to reduce leakage
-  pinMode(PWR_KEY_Input_PIN, INPUT);
-  gpio_pulldown_dis((gpio_num_t)PWR_KEY_Input_PIN);
-  gpio_pullup_dis((gpio_num_t)PWR_KEY_Input_PIN);
+  if (usb_connected)
+  {
+    // USB connected - keep power on but display off
+    printf("[fall_asleep] USB connected - entering low power mode with display off\n");
+    digitalWrite(PWR_Control_PIN, HIGH);
+    vTaskDelay(100);
 
-  // Disable all wakeup sources first
+    // Simple loop: wait for USB disconnect or button press, then deep sleep
+    uint32_t last_check = 0;
+    while (true)
+    {
+      vTaskDelay(100);
+
+      // Check for button press to wake
+      if (is_button_pressed())
+      {
+        vTaskDelay(50); // Debounce
+        if (is_button_pressed() && wait_for_button_hold(Device_Wake_Time))
+        {
+          printf("[fall_asleep] Button held - waking device\n");
+          BAT_State = BAT_ON;
+
+          // Re-enable display
+          if (board && board->getBacklight())
+          {
+            board->getBacklight()->on();
+            int brightness = player_store.getInt(KEY_BRIGHTNESS, 100);
+            board->getBacklight()->setBrightness(brightness);
+          }
+
+          return; // Exit to main loop
+        }
+      }
+
+      // Check voltage every 2 seconds
+      uint32_t now = millis();
+      if (now - last_check > 2000) // Check every 2 seconds
+      {
+        float current_voltage = battery_get_volts();
+
+        if (current_voltage < USB_VOLTAGE_THRESHOLD) // USB disconnected
+        {
+          printf("[fall_asleep] USB disconnected (%.2fV) - entering deep sleep\n", current_voltage);
+          digitalWrite(PWR_Control_PIN, LOW);
+          vTaskDelay(100);
+          break; // Exit loop to deep sleep below
+        }
+
+        last_check = now;
+      }
+    }
+  }
+  else
+  {
+    // No USB - power off immediately
+    printf("[fall_asleep] No USB - powering off\n");
+    digitalWrite(PWR_Control_PIN, LOW);
+    vTaskDelay(100);
+  }
+
+  // Configure deep sleep
   esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
-
-  // Enable wakeup on external pin (power button only)
   esp_sleep_enable_ext0_wakeup((gpio_num_t)PWR_KEY_Input_PIN, HIGH);
-
-  // Configure power domains for minimum consumption during sleep
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
   esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_OFF);
 
   printf("[fall_asleep] Entering deep sleep\n");
-  vTaskDelay(100); // Allow serial output to complete
-
+  vTaskDelay(100);
   esp_deep_sleep_start();
 }
 
 void power_loop(void)
 {
-  if (BAT_State == BAT_CHARGING)
+  if (BAT_State == BAT_ON)
   {
-    // In charging mode - check if button is pressed to boot
-    if (!digitalRead(PWR_KEY_Input_PIN))
+    // Check for button hold to sleep
+    if (is_button_pressed())
     {
       if (button_press_start == 0)
       {
         button_press_start = millis();
       }
+
       uint32_t held_time = millis() - button_press_start;
-      // Require button hold to boot from charging mode
-      if (held_time >= Device_Wake_Time)
+      if (held_time >= Device_Sleep_Time)
       {
-        printf("[power_loop] Button held while charging - booting device\n");
-        BAT_State = BAT_ON;
+        printf("[power_loop] Button held - entering sleep\n");
         button_press_start = 0;
+        fall_asleep();
+        // After deep sleep wake, execution starts from setup()
+        // This line only reached if we return from USB charging loop
       }
     }
     else
     {
-      button_press_start = 0;
-    }
-  }
-  else if (BAT_State != BAT_OFF)
-  {
-    if (!digitalRead(PWR_KEY_Input_PIN))
-    {
-      if (BAT_State == BAT_READY_FOR_SLEEP)
-      {
-        if (button_press_start == 0)
-        {
-          button_press_start = millis();
-        }
-        uint32_t held_time = millis() - button_press_start;
-        if (held_time >= Device_Sleep_Time)
-        {
-          fall_asleep();
-        }
-      }
-    }
-    else
-    {
-      if (BAT_State == BAT_ON)
-        BAT_State = BAT_READY_FOR_SLEEP;
+      // Button released - reset timer
       button_press_start = 0;
     }
   }
