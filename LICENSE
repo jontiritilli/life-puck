@@ -1,6 +1,7 @@
 Free for Personal Use License
 
-Copyright (c) 2025 Jon Tiritilli
+Copyright (c) 2025 Jon Tiritilli (Original LifePuck Project)
+Copyright (c) 2025 Pascal (Theme System, Configuration Overhaul, Calibration Enhancements)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to use, copy, and modify the Software for personal, non-commercial purposes only, subject to the following conditions:
@@ -15,3 +16,53 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+CONTRIBUTORS:
+
+Jon Tiritilli (Original Author):
+- Original LifePuck hardware integration and driver development
+- Core life counter implementation (single and two-player)
+- LVGL framework setup and display driver
+- Battery management, audio system, RTC integration
+- Initial preset system and menu structure
+- Hardware abstraction layer for ESP32-S3 Touch LCD 1.85"
+
+Pascal "Suthe" (2025):
+- Complete Theme System Implementation:
+  - 5 themes with custom background images (Yugioh, Magic, Pokemon, Default, Off)
+  - Automatic theme mode with preset-based assignment
+  - Manual theme selection with live updates
+  - Theme integration across all UI elements (buttons, icons, text)
+  
+- Centralized Configuration System:
+  - New config.h as single source of truth (89 configurable values)
+  - Force reset flags for testing and deployment (9 flags, fully functional)
+  - Touch calibration defaults centralized from hardcoded values
+  - All preset definitions moved to config.h for easy editing
+  
+- Touch Calibration Enhancements:
+  - "Suthe's Method" - Interactive zone-based calibration algorithm
+  - Power management suspension during calibration (prevents interruptions)
+  - Two-pass system (coarse + fine) for speed and precision
+  - Comprehensive calibration documentation
+  
+- Preset Editor Enhancements:
+  - Theme selection available for ALL presets (not just custom)
+  - Per-preset theme overrides with NVS persistence
+  - Scrolling support with proper layout (5-row grid)
+  - All preset values editable on-device
+  
+- Bug Fixes and Improvements:
+  - Touch calibration no longer interrupted by auto-dim/sleep
+  - Theme backgrounds refresh immediately on Life Counter return
+  - Preset changes trigger live theme updates in Automatic mode
+  - Theme text colors with proper contrast on all backgrounds
+  - Consistent time units throughout configuration
+  
+- Documentation:
+  - Suthe's Method calibration algorithm documentation
+  - Display coordinate system documentation updates
+  - Configuration system documentation
+  - Comprehensive inline code comments
